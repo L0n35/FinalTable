@@ -12,8 +12,14 @@ export default function Home() {
         Predict how the league will finish, then see who called it.
       </p>
       <Link
-        href="/leagues/new"
+        href="/explore"
         className="flex h-13 items-center justify-center rounded-lg bg-accent font-display text-xl font-bold text-accent-ink"
+      >
+        Explore leagues
+      </Link>
+      <Link
+        href="/leagues/new"
+        className="flex h-13 items-center justify-center rounded-lg border border-line font-semibold"
       >
         Create a league
       </Link>

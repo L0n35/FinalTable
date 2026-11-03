@@ -1,14 +1,17 @@
 import { supabaseUrl } from "@/lib/supabase/config";
 
-export type LeagueType = "host" | "public" | "private";
+export type LeagueType = "official" | "public" | "private";
 
+// A row of the league_details view: a league together with the season it plays.
 export type LeagueRow = {
   id: string;
   slug: string;
   join_code: string;
   type: LeagueType;
   name: string;
-  sport: string | null;
+  created_by: string | null;
+  hidden_at: string | null;
+  season_id: string;
   team_count: number;
   deadline: string;
   promotion_count: number;
@@ -16,7 +19,10 @@ export type LeagueRow = {
   playoff_to: number | null;
   relegation_count: number;
   status: "draft" | "published" | "finished";
-  created_by: string | null;
+  competition_id: string | null;
+  competition_name: string | null;
+  season_label: string | null;
+  sport: string | null;
 };
 
 export type TeamRow = {
@@ -44,7 +50,7 @@ export type Zones = {
 };
 
 export const LEAGUE_COLUMNS =
-  "id, slug, join_code, type, name, sport, team_count, deadline, promotion_count, playoff_from, playoff_to, relegation_count, status, created_by";
+  "id, slug, join_code, type, name, created_by, hidden_at, season_id, team_count, deadline, promotion_count, playoff_from, playoff_to, relegation_count, status, competition_id, competition_name, season_label, sport";
 export const TEAM_COLUMNS = "id, name, logo_path, colour_primary, colour_secondary";
 
 export const MIN_TEAMS = 4;
@@ -95,6 +101,15 @@ export function zonesOf(league: LeagueRow): Zones {
     playoffTo: league.playoff_to,
     relegation: league.relegation_count,
   };
+}
+
+// A league playing an official season that isn't the official league itself.
+export function isPresetLeague(league: Pick<LeagueRow, "type" | "competition_id">): boolean {
+  return league.type !== "official" && league.competition_id !== null;
+}
+
+export function seasonTitle(league: Pick<LeagueRow, "competition_name" | "season_label">): string | null {
+  return league.competition_name ? `${league.competition_name} ${league.season_label}` : null;
 }
 
 // Mirrors the database constraints, so people see the problem before saving.

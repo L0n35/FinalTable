@@ -61,7 +61,7 @@ export function FormatStep({
 
   const save = () => {
     startTransition(async () => {
-      const result = await saveFormat(league.id, zones);
+      const result = await saveFormat(league, zones);
       if (result.ok) onSaved(result.league);
       else setError(result.error);
     });

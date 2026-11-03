@@ -30,7 +30,7 @@ async function Setup({
 
   const { supabase, userId } = session;
   const { data } = await supabase
-    .from("leagues")
+    .from("league_details")
     .select(LEAGUE_COLUMNS)
     .eq("id", leagueId)
     .maybeSingle();
@@ -55,7 +55,7 @@ async function Setup({
   const { data: teams } = await supabase
     .from("teams")
     .select(TEAM_COLUMNS)
-    .eq("league_id", leagueId)
+    .eq("season_id", league.season_id)
     .order("created_at");
 
   const requested = WIZARD_STEPS.find((candidate) => candidate === step);

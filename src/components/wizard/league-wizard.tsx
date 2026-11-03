@@ -3,13 +3,15 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { deleteLeague, publishLeague } from "@/app/leagues/actions";
+import { deleteLeague, publishSeason } from "@/app/leagues/actions";
 import { LocalTime } from "@/components/local-time";
 import { BasicsStep } from "@/components/wizard/basics-step";
 import { FormError, StepActions } from "@/components/wizard/fields";
 import { FormatStep } from "@/components/wizard/format-step";
+import { OfficialStep, type ExistingSeason } from "@/components/wizard/official-step";
+import { PresetPicker, type Preset } from "@/components/wizard/preset-picker";
 import { TeamsStep } from "@/components/wizard/teams-step";
-import type { LeagueRow, TeamRow } from "@/lib/leagues";
+import { isPresetLeague, seasonTitle, type LeagueRow, type TeamRow } from "@/lib/leagues";
 
 const STEPS = ["basics", "teams", "format", "review"] as const;
 export type WizardStep = (typeof STEPS)[number];
@@ -20,21 +22,56 @@ const STEP_TITLES: Record<WizardStep, string> = {
   review: "Review",
 };
 
+type StartKind = "preset" | "custom" | "official";
+
+function StartChoice({
+  title,
+  description,
+  onClick,
+}: {
+  title: string;
+  description: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center justify-between gap-3 rounded-lg border border-line bg-surface p-4 text-left"
+    >
+      <span>
+        <span className="block font-display text-2xl font-bold">{title}</span>
+        <span className="block text-muted">{description}</span>
+      </span>
+      <span aria-hidden="true" className="text-xl text-muted">
+        ›
+      </span>
+    </button>
+  );
+}
+
 export function LeagueWizard({
   initialLeague,
   initialTeams,
   isAdmin,
   initialStep,
+  presets = [],
+  officialSeasons = [],
+  initialKind = null,
 }: {
   initialLeague: LeagueRow | null;
   initialTeams: TeamRow[];
   isAdmin: boolean;
   initialStep: WizardStep;
+  presets?: Preset[];
+  officialSeasons?: ExistingSeason[];
+  initialKind?: StartKind | null;
 }) {
   const router = useRouter();
   const [league, setLeague] = useState(initialLeague);
   const [teams, setTeams] = useState(initialTeams);
   const [step, setStep] = useState<WizardStep>(initialLeague ? initialStep : "basics");
+  const [kind, setKind] = useState<StartKind | null>(initialKind);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -47,12 +84,14 @@ export function LeagueWizard({
     window.scrollTo(0, 0);
   };
 
+  const openCreated = (id: string) => router.replace(`/leagues/${id}/setup?step=teams`);
+
   const publish = () => {
     if (!league) return;
     setError(null);
     startTransition(async () => {
-      const result = await publishLeague(league.id);
-      if (result.ok) router.push(`/leagues/${result.slug}`);
+      const result = await publishSeason(league);
+      if (result.ok) router.push(`/leagues/${league.slug}`);
       else setError(result.error);
     });
   };
@@ -61,10 +100,85 @@ export function LeagueWizard({
     if (!league || !window.confirm(`Delete ${league.name}? This can't be undone.`)) return;
     startTransition(async () => {
       const result = await deleteLeague(league.id);
-      if (result.ok) router.push("/");
+      if (result.ok) router.push(league.type === "official" ? "/admin" : "/");
       else setError(result.error);
     });
   };
+
+  // Starting a new league: choose how, before any steps apply.
+  if (!league && kind === null) {
+    return (
+      <div className="flex flex-col gap-3">
+        <h1 className="mb-1 font-display text-3xl font-bold">Create a league</h1>
+        <StartChoice
+          title="Use a preset"
+          description="Pick a real competition. Teams and standings update automatically."
+          onClick={() => setKind("preset")}
+        />
+        <StartChoice
+          title="Custom league"
+          description="Set up your own teams, format and deadline, and keep the table yourself."
+          onClick={() => setKind("custom")}
+        />
+        {isAdmin && (
+          <StartChoice
+            title="Official league"
+            description="Admins only. Add a competition season for everyone to play."
+            onClick={() => setKind("official")}
+          />
+        )}
+      </div>
+    );
+  }
+
+  if (!league && kind === "preset") {
+    return (
+      <div>
+        <h1 className="mb-4 font-display text-3xl font-bold">Choose a preset</h1>
+        <PresetPicker presets={presets} onBack={() => setKind(null)} />
+      </div>
+    );
+  }
+
+  if (!league && kind === "official") {
+    return (
+      <div>
+        <h1 className="mb-4 font-display text-3xl font-bold">New official league</h1>
+        <OfficialStep
+          seasons={officialSeasons}
+          onBack={() => setKind(null)}
+          onCreated={openCreated}
+        />
+      </div>
+    );
+  }
+
+  // A preset league has nothing to set up beyond its name and privacy.
+  if (league && isPresetLeague(league)) {
+    return (
+      <div className="flex flex-col gap-4">
+        <h1 className="font-display text-3xl font-bold">League settings</h1>
+        <p className="text-muted">
+          This league plays {seasonTitle(league)}, so its teams, deadline and standings come from
+          the official league.
+        </p>
+        <BasicsStep
+          league={league}
+          onCreated={openCreated}
+          onSaved={(saved) => router.push(`/leagues/${saved.slug}`)}
+        />
+        <FormError message={error} />
+        <button
+          type="button"
+          onClick={remove}
+          disabled={isPending}
+          className="h-11 text-sm font-semibold text-relegation underline"
+        >
+          Delete this league
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -84,8 +198,8 @@ export function LeagueWizard({
       {step === "basics" && (
         <BasicsStep
           league={league}
-          isAdmin={isAdmin}
-          onCreated={(id) => router.replace(`/leagues/${id}/setup?step=teams`)}
+          onBack={league ? undefined : () => setKind(null)}
+          onCreated={openCreated}
           onSaved={(saved) => {
             setLeague(saved);
             go("teams");

@@ -22,28 +22,67 @@
 - Creator-customised scoring
 - Chat, comments and native mobile apps
 
-## 2. Users and league types
+## 2. Users, competitions and league types
 
-| Type | Created by | Listed in directory | How to join |
+### How the game is structured
+
+```text
+Sport: Football
+  Competition: Premier League
+    Season: 2026-27
+      teams, deadline, zones, standings
+      one prediction per player
+      leagues:
+        Premier League 2026-27 (official, no owner)
+        Dave's Mates (private, Dave)
+        Pub League (public, Sam)
+```
+
+A **season** is the thing being predicted. A **league** is a group of people playing a season, with a name, a privacy setting and members. A custom league gets its own hidden season, which users never see, so every league works the same way.
+
+| Type | Created by | Listed on Explore | How to join |
 |---|---|---|---|
-| Host | Site admins | Yes, featured | Anyone |
-| Public | Any logged-in user | Yes, searchable | Anyone |
+| Official | Any admin. Belongs to the site, with no owner | Yes, Official tab | Anyone signed in |
+| Public | Any logged-in user | Yes, Community tab | Anyone |
 | Private | Any logged-in user | No | Code or link |
+
+Public and private leagues can be **custom**, with their own teams and table, or use a **preset**, which plays an official season.
 
 | Role | Can do |
 |---|---|
 | Player | Submit and edit a prediction before the deadline, and view the leaderboard |
 | Spectator | View the table, leaderboard and revealed picks, without entering or scoring |
-| Creator | Everything a player can do, plus set up the league and update its standings |
-| Admin | Create host leagues, review reports, and hide or remove any league |
+| Creator | Everything a player can do, plus manage their league |
+| Admin | Create and manage official leagues, review reports, and hide or remove any league |
+
+### Official leagues and presets
+
+- Each season of a competition has one official league. It has no owner, so it only appears under Your Leagues for people who join it, including the admin who created it.
+- Every published official season is automatically available as a preset until its deadline. After that it disappears from the preset list.
+- A new season can copy teams, logos and zones from the previous one, ready for the admin to swap promoted and relegated teams.
+- A preset league's creator chooses only its name and privacy. Teams, zones, deadline and standings come from the official season, so an admin's update reaches every league on that season immediately.
+
+### One prediction per season
+
+- A player has one table per season, and it counts in every league they're in for that season. Editing it before the deadline changes it everywhere.
+- Each new season needs a new prediction.
+- Ranks are per league, so the same score can be 1st among friends and 900th in the official league.
+- Someone joining another league on the season after the deadline keeps their locked table, which counts straight away. Anyone with no table for that season becomes a spectator.
+- After the deadline, a player's table is visible only to people who can see a league they play in, so playing only in a private league keeps it private.
 
 ## 3. Core flows
 
 ### 3.1 Create a league
 
-The setup is a mobile-friendly, multi-step wizard that saves as a draft.
+Creating a league starts with a choice:
 
-1. **Basics:** league name, type (public or private; host for admins only), optional sport label, number of teams (4 to 40), and start date and time.
+- **Use a preset:** choose sport, then competition, then season (skipped when only one is open), then a name and privacy. The league is ready straight away.
+- **Custom league:** the setup wizard below, which saves as a draft.
+- **Official league (admins only):** sport, competition, season label and deadline, optionally copying the previous season, then the wizard below.
+
+Custom league steps:
+
+1. **Basics:** league name, public or private, optional sport label, number of teams (4 to 40), and start date and time.
 2. **Teams:** a name for each team, plus an uploaded logo or an auto-generated badge made from the team's initials and chosen colours. Pasting a list of names, one per line, fills the list quickly.
 3. **Format:** optional promotion, playoff and relegation zones, shown on a live preview of the table.
 4. **Review and publish:** the creator gets a share link and code.
@@ -98,7 +137,7 @@ This is the most important screen in the app.
 
 ### 3.5 Update standings
 
-- The creator, or an admin for host leagues, reorders the table using the same component as the prediction screen and saves it.
+- A custom league's creator, or an admin for official seasons, reorders the table using the same component as the prediction screen and saves it. Preset leagues update automatically from the official season.
 - Saving recalculates all scores in a single transaction.
 - Each update is recorded with its time and author, and members can see when the table last changed. This matters because creators can also play in their own leagues.
 - The creator marks the league **Finished** after the final update, which makes the scores final. Admins can reverse this if it was a mistake.
@@ -148,7 +187,7 @@ The change from Open to Live isn't a scheduled job. It's worked out by comparing
 - Any logged-in user can report a public league or a team logo.
 - Admins review reports in a simple queue, and can dismiss them or hide the league.
 - League creation is limited to 5 per user per day.
-- Terms of use make uploaders responsible for the images they upload. Club logos may be trademarked, so host leagues should use auto-generated badges unless you have permission.
+- Terms of use make uploaders responsible for the images they upload. Club logos may be trademarked, so official leagues should use auto-generated badges unless you have permission.
 
 ## 7. Technical design
 
@@ -180,21 +219,21 @@ Sources disagree on the right `touch-action` setting. The plan is `touch-action:
 
 ```text
 profiles            id, display_name, avatar_url, is_admin
-leagues             id, slug, join_code, type, name, sport, team_count, deadline,
+sports              id, name
+competitions        id, sport_id, name
+seasons             id, competition_id, label, sport_label, team_count, deadline,
                     promotion_count, playoff_from, playoff_to, relegation_count,
-                    status (draft | published | finished), hidden_at, finished_at,
-                    created_by
-teams               id, league_id, name, logo_path, colour_primary, colour_secondary
+                    status (draft | published | finished), finished_at
+leagues             id, slug, join_code, type, name, season_id, created_by, hidden_at
+teams               id, season_id, name, logo_path, colour_primary, colour_secondary
 memberships         league_id, user_id, role (player | spectator), joined_at
-predictions         id, league_id, user_id, team_order (uuid[]), needs_review,
-                    submitted_at
-standings_updates   id, league_id, version, team_order (uuid[]), updated_by, created_at
-prediction_scores   prediction_id, standings_update_id, base_points, bonus_points,
-                    exact_count, rank, previous_rank
+predictions         id, season_id, user_id, team_order (uuid[]), needs_review, submitted_at
+standings_updates   id, season_id, version, team_order (uuid[]), updated_by, created_at
+prediction_scores   prediction_id, standings_update_id, base_points, bonus_points, exact_count
 reports             id, league_id, team_id, reported_by, reason, status, created_at
 ```
 
-Only the latest and previous sets of scores are kept for each league, to keep the database small. "Live" and "Hidden" in section 5 aren't stored as statuses: Live is a published league past its deadline, and Hidden is a league with `hidden_at` set, so unhiding restores its previous state.
+The `league_details` view joins a league to its season, competition and sport for reading. All writes go through database functions. Only the latest and previous sets of scores are kept for each season, to keep the database small. Ranks are worked out per league when read, by `league_leaderboard`. "Live" and "Hidden" in section 5 aren't stored as statuses: Live is a published season past its deadline, and Hidden is a league with `hidden_at` set, so unhiding restores its previous state.
 
 ### Rules enforced in the database
 
@@ -244,7 +283,7 @@ Limits were checked on 2 November 2026 and can change.
 3. **Creating and joining:** the setup wizard, logos and badges, codes and links, and in-app browser handling.
 4. **Predictions:** connect the ranking screen to real data, including drafts, submit, edit and deadline lock.
 5. **Live season:** standings updates, scoring, leaderboard, pick reveal and spectators.
-6. **Discovery and admin:** the directory, host leagues, reports and the admin queue.
+6. **Discovery and admin:** Explore, official leagues and presets (done), reports and the admin queue.
 7. **Launch readiness:** calendar option, backups, usage alerts, legal pages and a final device pass.
 
 ## 11. Decisions
@@ -262,7 +301,7 @@ Limits were checked on 2 November 2026 and can change.
 
 ### Assumptions to correct if wrong
 
-- "League type" in your brief means host, public or private, so sport is only an optional label.
+- "League type" in your brief means official, public or private. Sport is required for official leagues, and an optional label on custom ones.
 - "League start date" includes a time, because a deadline needs an exact moment.
 - The deadline is the league's start, with no separate setting.
 - Team count ranges from 4 to 40.

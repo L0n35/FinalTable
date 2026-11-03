@@ -37,6 +37,25 @@ body {
   font-family: var(--font-barlow), Arial, Helvetica, sans-serif;
 }
 
+/* Stops anything too wide from making a whole page scroll sideways. Unlike hidden, clip keeps sticky headers working. */
+html,
+body {
+  overflow-x: clip;
+}
+
+/* Phone browsers give date fields a built-in width that ignores width: 100% and overflows the page. */
+.date-input {
+  appearance: none;
+  -webkit-appearance: none;
+  min-width: 0;
+  max-width: 100%;
+  text-align: left;
+}
+
+fieldset {
+  min-width: 0;
+}
+
 /* Only the handle claims touches, so swiping a row still scrolls the page. */
 .drag-handle {
   touch-action: none;

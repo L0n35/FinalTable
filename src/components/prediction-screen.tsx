@@ -61,6 +61,7 @@ type PredictionScreenProps = {
   userId?: string;
   backHref?: string;
   sharePath?: string;
+  note?: string;
 };
 
 export function PredictionScreen({
@@ -72,6 +73,7 @@ export function PredictionScreen({
   userId,
   backHref,
   sharePath,
+  note,
 }: PredictionScreenProps) {
   const scope = userId ? `${league.id}:${userId}` : league.id;
   const draftKey = `final-table:draft:${scope}`;
@@ -315,6 +317,7 @@ export function PredictionScreen({
         />
 
         <p className="mt-4 text-center text-sm text-muted">Locks {deadlineLabel}</p>
+        {note && <p className="mt-1 text-center text-sm text-muted">{note}</p>}
       </main>
 
       <footer className="fixed inset-x-0 bottom-0 z-10 border-t border-line bg-background">

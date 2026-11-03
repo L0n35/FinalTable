@@ -8,6 +8,7 @@ import { getSession } from "@/lib/auth";
 import {
   isLocked,
   LEAGUE_COLUMNS,
+  seasonTitle,
   TEAM_COLUMNS,
   toTeam,
   zonesOf,
@@ -24,7 +25,7 @@ async function Predict({ params }: { params: Promise<{ slug: string }> }) {
   if (!userId) redirect(`/login?next=${encodeURIComponent(`${leaguePath}/predict`)}`);
 
   const { data } = await supabase
-    .from("leagues")
+    .from("league_details")
     .select(LEAGUE_COLUMNS)
     .eq("slug", slug)
     .maybeSingle();
@@ -41,19 +42,22 @@ async function Predict({ params }: { params: Promise<{ slug: string }> }) {
   if (membership?.role !== "player") redirect(leaguePath);
 
   const [{ data: teams }, { data: prediction }] = await Promise.all([
-    supabase.from("teams").select(TEAM_COLUMNS).eq("league_id", league.id),
+    supabase.from("teams").select(TEAM_COLUMNS).eq("season_id", league.season_id),
     supabase
       .from("predictions")
       .select("team_order, needs_review, submitted_at")
-      .eq("league_id", league.id)
+      .eq("season_id", league.season_id)
       .eq("user_id", userId)
       .maybeSingle(),
   ]);
 
+  const title = seasonTitle(league);
+
   return (
     <PredictionLoader
       league={{
-        id: league.id,
+        // Predictions belong to the season, so that's what the screen saves and keeps drafts under.
+        id: league.season_id,
         name: league.name,
         deadline: league.deadline,
         zones: zonesOf(league),
@@ -66,6 +70,7 @@ async function Predict({ params }: { params: Promise<{ slug: string }> }) {
       userId={userId}
       backHref={leaguePath}
       sharePath={`/join/${league.join_code}`}
+      note={title ? `This table counts in every ${title} league you're in.` : undefined}
     />
   );
 }

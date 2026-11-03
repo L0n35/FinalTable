@@ -42,15 +42,17 @@ export type Db = {
     sql: string,
     params?: unknown[],
   ) => Promise<T[]>;
-  passDeadline: (leagueId: string) => Promise<void>;
+  passDeadline: (seasonId: string) => Promise<void>;
 };
 
-export async function createDb(): Promise<Db> {
+// upTo stops before the named migration, so a test can seed old data and then run it.
+export async function createDb(upTo?: string): Promise<Db> {
   const pg = new PGlite();
   await pg.exec(SUPABASE_STUB);
 
   const migrationsDir = path.resolve(__dirname, "../migrations");
   for (const file of readdirSync(migrationsDir).sort()) {
+    if (upTo && file >= upTo) break;
     await pg.exec(readFileSync(path.join(migrationsDir, file), "utf8"));
   }
 
@@ -78,10 +80,10 @@ export async function createDb(): Promise<Db> {
       }
     },
     // The rules forbid moving a deadline into the past, so tests skip the triggers to time travel.
-    async passDeadline(leagueId) {
+    async passDeadline(seasonId) {
       await pg.exec("set session_replication_role = replica");
-      await pg.query("update public.leagues set deadline = now() - interval '1 hour' where id = $1", [
-        leagueId,
+      await pg.query("update public.seasons set deadline = now() - interval '1 hour' where id = $1", [
+        seasonId,
       ]);
       await pg.exec("set session_replication_role = origin");
     },

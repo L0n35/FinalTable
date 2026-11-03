@@ -10,6 +10,7 @@ export async function YourLeagues() {
   const { supabase, userId } = await getSession();
   if (!userId) return null;
 
+  // Based on membership, so an official league an admin created isn't "theirs" unless they joined it.
   const { data: memberships } = await supabase
     .from("memberships")
     .select("league_id")
@@ -18,7 +19,7 @@ export async function YourLeagues() {
   if (leagueIds.length === 0) return null;
 
   const { data } = await supabase
-    .from("leagues")
+    .from("league_details")
     .select(LEAGUE_COLUMNS)
     .in("id", leagueIds)
     .order("deadline");
@@ -27,15 +28,15 @@ export async function YourLeagues() {
 
   const { data: predictions } = await supabase
     .from("predictions")
-    .select("league_id, needs_review")
+    .select("season_id, needs_review")
     .eq("user_id", userId);
   const predictionFor = new Map(
-    (predictions ?? []).map((row) => [row.league_id as string, row.needs_review as boolean]),
+    (predictions ?? []).map((row) => [row.season_id as string, row.needs_review as boolean]),
   );
 
   const statusOf = (league: LeagueRow) => {
     if (league.status === "draft" || isLocked(league)) return null;
-    const needsReview = predictionFor.get(league.id);
+    const needsReview = predictionFor.get(league.season_id);
     if (needsReview === undefined) return { label: "Prediction needed", urgent: true };
     return needsReview
       ? { label: "Review needed", urgent: true }

@@ -18,8 +18,18 @@ export type BasicsInput = {
   name: string;
   type: LeagueType;
   sport: string;
+  deadline: string;
+};
+
+export type CustomLeagueInput = BasicsInput & { teamCount: number };
+
+export type OfficialSeasonInput = {
+  sport: string;
+  competition: string;
+  label: string;
   teamCount: number;
   deadline: string;
+  copyFrom: string | null;
 };
 
 export type TeamInput = {
@@ -33,8 +43,12 @@ export type TeamInput = {
 const MESSAGES: Record<string, string> = {
   league_limit_reached: "You've reached the limit of 5 new leagues a day. Please try again tomorrow.",
   deadline_must_be_in_the_future: "The start date needs to be in the future.",
-  only_admins_can_create_host_leagues: "Only admins can create host leagues.",
-  only_admins_can_manage_host_leagues: "Only admins can manage host leagues.",
+  official_leagues_need_a_competition: "That league type isn't available here.",
+  admin_only: "Only admins can do that.",
+  preset_not_available: "That preset has already started, or is no longer available.",
+  season_already_exists: "That competition already has a season with that name.",
+  season_to_copy_not_found: "We couldn't find the season to copy. Please try again.",
+  season_has_other_leagues: "Other leagues are using this season, so it can't be deleted. You can hide it instead.",
   league_locked_after_deadline: "This league has started, so its setup is locked.",
   league_not_found: "We couldn't find that league, or you can't change it.",
   league_already_published: "This league is already published.",
@@ -49,7 +63,7 @@ const MESSAGES: Record<string, string> = {
   invalid_team_order: "The teams in this league have changed. Please reload and check your table.",
   zones_fit: "Promotion and relegation overlap. Please check the format step.",
   playoff_between_zones: "Playoff places overlap with other zones. Please check the format step.",
-  leagues_team_count_check: "A league needs between 4 and 40 teams.",
+  seasons_team_count_check: "A league needs between 4 and 40 teams.",
 };
 
 function failure(error: { message?: string } | null): Failure {
@@ -60,23 +74,60 @@ function failure(error: { message?: string } | null): Failure {
   return { ok: false, error: "Something went wrong. Please try again." };
 }
 
-const basicsRow = (input: BasicsInput) => ({
-  name: input.name.trim(),
-  type: input.type,
-  sport: input.sport.trim() || null,
-  deadline: input.deadline,
-});
-
-export async function createLeague(input: BasicsInput): Promise<Result<{ id: string }>> {
-  const supabase = await createClient();
+async function readLeague(supabase: Awaited<ReturnType<typeof createClient>>, leagueId: string) {
   const { data, error } = await supabase
-    .from("leagues")
-    .insert({ ...basicsRow(input), team_count: input.teamCount })
-    .select("id")
+    .from("league_details")
+    .select(LEAGUE_COLUMNS)
+    .eq("id", leagueId)
     .single();
+  return { league: data as unknown as LeagueRow | null, error };
+}
+
+export async function createCustomLeague(input: CustomLeagueInput): Promise<Result<{ id: string }>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("create_custom_league", {
+    p_name: input.name,
+    p_type: input.type,
+    p_sport: input.sport,
+    p_team_count: input.teamCount,
+    p_deadline: input.deadline,
+  });
   if (error) return failure(error);
   revalidatePath("/", "layout");
-  return { ok: true, id: data.id };
+  return { ok: true, id: data as string };
+}
+
+export async function createPresetLeague(
+  seasonId: string,
+  name: string,
+  type: LeagueType,
+): Promise<Result<{ slug: string }>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("create_preset_league", {
+    p_season_id: seasonId,
+    p_name: name,
+    p_type: type,
+  });
+  if (error) return failure(error);
+  const { league, error: readError } = await readLeague(supabase, data as string);
+  if (readError || !league) return failure(readError);
+  revalidatePath("/", "layout");
+  return { ok: true, slug: league.slug };
+}
+
+export async function createOfficialSeason(input: OfficialSeasonInput): Promise<Result<{ id: string }>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("create_official_season", {
+    p_sport: input.sport,
+    p_competition: input.competition,
+    p_label: input.label,
+    p_team_count: input.teamCount,
+    p_deadline: input.deadline,
+    p_copy_from: input.copyFrom,
+  });
+  if (error) return failure(error);
+  revalidatePath("/", "layout");
+  return { ok: true, id: data as string };
 }
 
 export async function updateBasics(
@@ -84,42 +135,41 @@ export async function updateBasics(
   input: BasicsInput,
 ): Promise<Result<{ league: LeagueRow }>> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("leagues")
-    .update(basicsRow(input))
-    .eq("id", leagueId)
-    .select(LEAGUE_COLUMNS)
-    .maybeSingle();
+  const { error } = await supabase.rpc("update_league_basics", {
+    p_league_id: leagueId,
+    p_name: input.name,
+    p_type: input.type,
+    p_sport: input.sport,
+    p_deadline: input.deadline,
+  });
   if (error) return failure(error);
-  if (!data) return failure({ message: "league_not_found" });
+  const { league, error: readError } = await readLeague(supabase, leagueId);
+  if (readError || !league) return failure(readError);
   revalidatePath("/", "layout");
-  return { ok: true, league: data as unknown as LeagueRow };
+  return { ok: true, league };
 }
 
 export async function saveFormat(
-  leagueId: string,
+  league: Pick<LeagueRow, "id" | "season_id">,
   zones: Zones,
 ): Promise<Result<{ league: LeagueRow }>> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("leagues")
-    .update({
-      promotion_count: zones.promotion,
-      playoff_from: zones.playoffFrom,
-      playoff_to: zones.playoffTo,
-      relegation_count: zones.relegation,
-    })
-    .eq("id", leagueId)
-    .select(LEAGUE_COLUMNS)
-    .maybeSingle();
+  const { error } = await supabase.rpc("save_season_format", {
+    p_season_id: league.season_id,
+    p_promotion: zones.promotion,
+    p_playoff_from: zones.playoffFrom,
+    p_playoff_to: zones.playoffTo,
+    p_relegation: zones.relegation,
+  });
   if (error) return failure(error);
-  if (!data) return failure({ message: "league_not_found" });
+  const { league: saved, error: readError } = await readLeague(supabase, league.id);
+  if (readError || !saved) return failure(readError);
   revalidatePath("/", "layout");
-  return { ok: true, league: data as unknown as LeagueRow };
+  return { ok: true, league: saved };
 }
 
 export async function saveTeams(
-  leagueId: string,
+  league: Pick<LeagueRow, "id" | "season_id">,
   teamCount: number,
   teams: TeamInput[],
 ): Promise<Result<{ league: LeagueRow; teams: TeamRow[] }>> {
@@ -128,59 +178,52 @@ export async function saveTeams(
   const { data: before } = await supabase
     .from("teams")
     .select("logo_path")
-    .eq("league_id", leagueId);
+    .eq("season_id", league.season_id);
 
-  const { error } = await supabase.rpc("save_league_teams", {
-    p_league_id: leagueId,
+  const { error } = await supabase.rpc("save_season_teams", {
+    p_season_id: league.season_id,
     p_team_count: teamCount,
     p_teams: teams,
   });
   if (error) return failure(error);
 
-  // Clean up replaced logos. A failure here only leaves an unused file behind.
+  // Clean up replaced logos, unless a copied season still uses the file. A failure here only
+  // leaves an unused file behind.
   const inUse = new Set(teams.map((team) => team.logo_path));
   const unused = (before ?? [])
     .map((row) => row.logo_path as string | null)
     .filter((path): path is string => Boolean(path) && !inUse.has(path));
-  if (unused.length > 0) await supabase.storage.from("team-logos").remove(unused);
+  if (unused.length > 0) {
+    const { data: stillUsed } = await supabase.from("teams").select("logo_path").in("logo_path", unused);
+    const shared = new Set((stillUsed ?? []).map((row) => row.logo_path as string));
+    const removable = unused.filter((path) => !shared.has(path));
+    if (removable.length > 0) await supabase.storage.from("team-logos").remove(removable);
+  }
 
-  const [leagueResult, teamsResult] = await Promise.all([
-    supabase.from("leagues").select(LEAGUE_COLUMNS).eq("id", leagueId).single(),
-    supabase.from("teams").select(TEAM_COLUMNS).eq("league_id", leagueId).order("created_at"),
+  const [{ league: saved, error: readError }, teamsResult] = await Promise.all([
+    readLeague(supabase, league.id),
+    supabase.from("teams").select(TEAM_COLUMNS).eq("season_id", league.season_id).order("created_at"),
   ]);
-  if (leagueResult.error) return failure(leagueResult.error);
+  if (readError || !saved) return failure(readError);
   if (teamsResult.error) return failure(teamsResult.error);
   revalidatePath("/", "layout");
-  return {
-    ok: true,
-    league: leagueResult.data as unknown as LeagueRow,
-    teams: teamsResult.data as TeamRow[],
-  };
+  return { ok: true, league: saved, teams: teamsResult.data as TeamRow[] };
 }
 
-export async function publishLeague(leagueId: string): Promise<Result<{ slug: string }>> {
+export async function publishSeason(
+  league: Pick<LeagueRow, "season_id" | "slug">,
+): Promise<Result<object>> {
   const supabase = await createClient();
-  const { error } = await supabase.rpc("publish_league", { p_league_id: leagueId });
+  const { error } = await supabase.rpc("publish_season", { p_season_id: league.season_id });
   if (error) return failure(error);
-  const { data, error: readError } = await supabase
-    .from("leagues")
-    .select("slug")
-    .eq("id", leagueId)
-    .single();
-  if (readError) return failure(readError);
   revalidatePath("/", "layout");
-  return { ok: true, slug: data.slug };
+  return { ok: true };
 }
 
 export async function deleteLeague(leagueId: string): Promise<Result<object>> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("leagues")
-    .delete()
-    .eq("id", leagueId)
-    .select("id");
+  const { error } = await supabase.rpc("delete_league", { p_league_id: leagueId });
   if (error) return failure(error);
-  if (!data || data.length === 0) return failure({ message: "league_not_found" });
   revalidatePath("/", "layout");
   return { ok: true };
 }
@@ -188,24 +231,37 @@ export async function deleteLeague(leagueId: string): Promise<Result<object>> {
 export async function joinLeague(
   leagueId: string,
   joinCode?: string,
-): Promise<Result<{ role: string }>> {
+): Promise<Result<{ role: string; hasPrediction: boolean }>> {
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("join_league", {
     p_league_id: leagueId,
     p_join_code: joinCode ?? null,
   });
   if (error) return failure(error);
+
+  // One table counts in every league on a season, so someone who has one needn't predict again.
+  const { league } = await readLeague(supabase, leagueId);
+  const { data: userData } = await supabase.auth.getClaims();
+  const { data: prediction } = league
+    ? await supabase
+        .from("predictions")
+        .select("id")
+        .eq("season_id", league.season_id)
+        .eq("user_id", userData?.claims.sub ?? "")
+        .maybeSingle()
+    : { data: null };
+
   revalidatePath("/", "layout");
-  return { ok: true, role: data as string };
+  return { ok: true, role: data as string, hasPrediction: Boolean(prediction) };
 }
 
 export async function submitPrediction(
-  leagueId: string,
+  seasonId: string,
   order: string[],
 ): Promise<{ ok: true } | { ok: false; error: string; closed?: boolean }> {
   const supabase = await createClient();
   const { error } = await supabase.rpc("submit_prediction", {
-    p_league_id: leagueId,
+    p_season_id: seasonId,
     p_team_order: order,
   });
   if (error) {

@@ -114,7 +114,7 @@ export function TeamsStep({
         return;
       }
       const extension = blob.type === "image/webp" ? "webp" : "png";
-      const path = `${league.id}/${newId()}.${extension}`;
+      const path = `${league.season_id}/${newId()}.${extension}`;
       const { error: uploadError } = await createClient()
         .storage.from("team-logos")
         .upload(path, blob, { contentType: blob.type, cacheControl: "31536000" });
@@ -148,7 +148,7 @@ export function TeamsStep({
       colour_secondary: row.secondary,
     }));
     startTransition(async () => {
-      const result = await saveTeams(league.id, rows.length, payload);
+      const result = await saveTeams(league, rows.length, payload);
       if (!result.ok) {
         setError(result.error);
         return;
