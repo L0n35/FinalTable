@@ -36,10 +36,10 @@ export async function AccountStatus() {
         </Link>
       )}
       <div className="flex items-center justify-between gap-3">
-        <p className="min-w-0 truncate">
+        <Link href="/account" aria-label="Your account" className="min-w-0 truncate py-2">
           <span className="text-muted">Signed in as </span>
-          <span className="font-semibold">{profile?.display_name ?? "Player"}</span>
-        </p>
+          <span className="font-semibold underline">{profile?.display_name ?? "Player"}</span>
+        </Link>
         <form action={signOut}>
           <button type="submit" className="h-11 shrink-0 rounded-lg border border-line px-4 font-semibold">
             Sign out

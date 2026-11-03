@@ -186,7 +186,7 @@ The change from Open to Live isn't a scheduled job. It's worked out by comparing
 ## 6. Moderation
 
 - Any logged-in user can report a league they can see, or one of its team logos. Each person can have one open report per league or team, and send 20 a day.
-- Admins review reports in a queue grouped by league. They can dismiss them, hide the league, or remove a reported logo, which also deletes the file because logos are served publicly.
+- Admins review reports in a queue grouped by league. They can dismiss one report or all of a league's reports, hide the league (which closes its reports), or remove a reported logo, which also deletes the file because logos are served publicly.
 - Admins can also hide, unhide or delete any league from its page. A hidden league stays visible only to its creator and admins, and the creator is told it's under review.
 - League creation is limited to 5 per user per day.
 - Terms of use make uploaders responsible for the images they upload. Club logos may be trademarked, so official leagues should use auto-generated badges unless you have permission.
@@ -276,7 +276,7 @@ Limits were checked on 2 November 2026 and can change.
 - **Performance:** the prediction screen is usable within 2.5 seconds on a mid-range phone on 4G. Dragging 40 teams stays smooth.
 - **Accessibility:** WCAG 2.2 AA, including full ranking without dragging.
 - **Time zones:** deadlines are stored in UTC, shown in the viewer's local time, and shown with the time zone during setup.
-- **Privacy:** a privacy policy and terms, an editable display name, and self-service account deletion. Email addresses are never shown to other users.
+- **Privacy:** a privacy policy and terms, an editable display name, and self-service account deletion. Email addresses are never shown to other users. Deleting an account removes that person's profile, memberships and predictions, and any league nobody else is in. A league with other members passes to its longest-standing member.
 
 ## 10. Milestones
 

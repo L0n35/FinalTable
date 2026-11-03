@@ -337,6 +337,14 @@ export async function submitReport(
   return { ok: true };
 }
 
+export async function dismissReport(reportId: string): Promise<Result<object>> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("dismiss_report", { p_report_id: reportId });
+  if (error) return failure(error);
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
 export async function resolveReports(leagueId: string, hide: boolean): Promise<Result<object>> {
   const supabase = await createClient();
   const { error } = await supabase.rpc("resolve_league_reports", { p_league_id: leagueId, p_hide: hide });

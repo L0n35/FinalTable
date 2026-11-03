@@ -47,6 +47,24 @@ set is_admin = true
 where id = (select id from auth.users where email = 'you@example.com');
 ```
 
+## Backups
+
+[.github/workflows/backup.yml](.github/workflows/backup.yml) saves an encrypted copy of the database every night and keeps it for 14 days. Logo files aren't included. To turn it on, add two secrets under **GitHub > Settings > Secrets and variables > Actions**:
+
+- `SUPABASE_DB_URL`: the **Session pooler** connection string from the Supabase **Connect** dialog, with your database password filled in. GitHub's runners can't reach the direct connection.
+- `BACKUP_PASSPHRASE`: a long random passphrase. Keep a copy somewhere safe, because the backups can't be opened without it.
+
+Then run **Database backup** once from the **Actions** tab to check it works. GitHub pauses scheduled workflows after 60 days without a commit, and emails you before it does.
+
+To restore, download the file from the workflow run, then:
+
+```bash
+gpg --decrypt backup.dump.gpg > backup.dump
+pg_restore --no-owner --dbname "YOUR_DB_URL" backup.dump
+```
+
+Try a restore on a spare project first, because it writes to whichever database you point it at.
+
 ## Project layout
 
 | Path | Contents |

@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { AccountStatus } from "@/components/account-status";
 import { JoinCodeForm } from "@/components/join-code-form";
+import { LegalLinks } from "@/components/legal-links";
 import { YourLeagues } from "@/components/your-leagues";
 
 export default function Home() {
@@ -33,6 +34,7 @@ export default function Home() {
       <Link href="/demo" className="mt-2 py-2 text-center text-sm text-muted underline">
         Try the demo
       </Link>
+      <LegalLinks />
     </main>
   );
 }

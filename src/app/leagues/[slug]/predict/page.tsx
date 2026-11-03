@@ -70,6 +70,7 @@ async function Predict({ params }: { params: Promise<{ slug: string }> }) {
       userId={userId}
       backHref={leaguePath}
       sharePath={`/join/${league.join_code}`}
+      calendarHref={`${leaguePath}/calendar`}
       note={title ? `This table counts in every ${title} league you're in.` : undefined}
     />
   );

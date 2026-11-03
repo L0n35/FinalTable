@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { CalendarLinks } from "@/components/calendar-links";
 import { LeagueTable } from "@/components/league-table";
 import { RankingList } from "@/components/ranking-list";
 import { Sheet } from "@/components/sheet";
@@ -43,6 +44,8 @@ type PredictionScreenProps = {
   userId?: string;
   backHref?: string;
   sharePath?: string;
+  // Offers the deadline as a calendar event. The demo has no real deadline to add.
+  calendarHref?: string;
   note?: string;
 };
 
@@ -55,6 +58,7 @@ export function PredictionScreen({
   userId,
   backHref,
   sharePath,
+  calendarHref,
   note,
 }: PredictionScreenProps) {
   const scope = userId ? `${league.id}:${userId}` : league.id;
@@ -358,6 +362,11 @@ export function PredictionScreen({
         <p className="mt-3 text-center text-sm text-muted">
           You can change your prediction until {deadlineLabel}.
         </p>
+        {calendarHref && (
+          <div className="mt-4">
+            <CalendarLinks title={league.name} deadline={league.deadline} icsHref={calendarHref} />
+          </div>
+        )}
         <div className="mt-4 grid grid-cols-2 gap-3">
           <button
             type="button"

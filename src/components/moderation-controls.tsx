@@ -2,7 +2,13 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { deleteLeague, removeTeamLogo, resolveReports, setLeagueHidden } from "@/app/leagues/actions";
+import {
+  deleteLeague,
+  dismissReport,
+  removeTeamLogo,
+  resolveReports,
+  setLeagueHidden,
+} from "@/app/leagues/actions";
 
 type Outcome = { ok: true } | { ok: false; error: string };
 
@@ -82,7 +88,7 @@ export function LeagueModeration({
 }
 
 // In the review queue, for all the open reports on one league.
-export function ReportActions({ leagueId }: { leagueId: string }) {
+export function ReportActions({ leagueId, reportCount }: { leagueId: string; reportCount: number }) {
   const { error, isPending, run } = useModeration();
 
   const hide = () => {
@@ -92,15 +98,17 @@ export function ReportActions({ leagueId }: { leagueId: string }) {
 
   return (
     <div>
-      <div className="grid grid-cols-2 gap-2">
-        <button
-          type="button"
-          onClick={() => run(() => resolveReports(leagueId, false))}
-          disabled={isPending}
-          className={buttonClass}
-        >
-          Dismiss
-        </button>
+      <div className={`grid gap-2 ${reportCount > 1 ? "grid-cols-2" : ""}`}>
+        {reportCount > 1 && (
+          <button
+            type="button"
+            onClick={() => run(() => resolveReports(leagueId, false))}
+            disabled={isPending}
+            className={buttonClass}
+          >
+            Dismiss all
+          </button>
+        )}
         <button type="button" onClick={hide} disabled={isPending} className={`${buttonClass} text-relegation`}>
           Hide league
         </button>
@@ -110,19 +118,43 @@ export function ReportActions({ leagueId }: { leagueId: string }) {
   );
 }
 
-export function RemoveLogoButton({ teamId, teamName }: { teamId: string; teamName: string }) {
+// For one report. A logo can only be removed from a report about that logo.
+export function SingleReportActions({
+  reportId,
+  logoTeam,
+}: {
+  reportId: string;
+  logoTeam?: { id: string; name: string };
+}) {
   const { error, isPending, run } = useModeration();
 
-  const remove = () => {
-    if (!window.confirm(`Remove the logo for ${teamName}? The team goes back to its badge.`)) return;
-    run(() => removeTeamLogo(teamId));
+  const removeLogo = (team: { id: string; name: string }) => {
+    if (!window.confirm(`Remove the logo for ${team.name}? The team goes back to its badge.`)) return;
+    run(() => removeTeamLogo(team.id));
   };
 
   return (
     <div className="mt-2">
-      <button type="button" onClick={remove} disabled={isPending} className={`${buttonClass} w-full text-relegation`}>
-        Remove logo
-      </button>
+      <div className={`grid gap-2 ${logoTeam ? "grid-cols-2" : ""}`}>
+        <button
+          type="button"
+          onClick={() => run(() => dismissReport(reportId))}
+          disabled={isPending}
+          className={buttonClass}
+        >
+          Dismiss
+        </button>
+        {logoTeam && (
+          <button
+            type="button"
+            onClick={() => removeLogo(logoTeam)}
+            disabled={isPending}
+            className={`${buttonClass} text-relegation`}
+          >
+            Remove logo
+          </button>
+        )}
+      </div>
       <ErrorLine error={error} />
     </div>
   );

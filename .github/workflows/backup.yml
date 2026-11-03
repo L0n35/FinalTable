@@ -1,0 +1,50 @@
+# Nightly encrypted database backup. The repo is public, so the file must be encrypted before it's
+# uploaded: anyone signed in to GitHub can download a public repo's workflow files.
+name: Database backup
+
+on:
+  schedule:
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Install the Postgres 17 client
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt noble-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17
+
+      - name: Dump and encrypt
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          if [ -z "$SUPABASE_DB_URL" ] || [ -z "$BACKUP_PASSPHRASE" ]; then
+            echo "::error::Add the SUPABASE_DB_URL and BACKUP_PASSPHRASE repository secrets."
+            exit 1
+          fi
+          /usr/lib/postgresql/17/bin/pg_dump "$SUPABASE_DB_URL" \
+            --schema=public --schema=private --schema=auth --schema=storage \
+            --no-owner --no-privileges --format=custom \
+          | gpg --batch --yes --pinentry-mode loopback \
+              --passphrase-fd 3 --symmetric --cipher-algo AES256 \
+              --output backup.dump.gpg 3<<<"$BACKUP_PASSPHRASE"
+          test -s backup.dump.gpg
+
+      - name: Keep for 14 days
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-backup-${{ github.run_id }}
+          path: backup.dump.gpg
+          retention-days: 14
+          if-no-files-found: error

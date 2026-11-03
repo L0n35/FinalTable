@@ -1391,6 +1391,20 @@ describe("reports", () => {
     expect(await db.asUser(alice, visible, [league.id])).toHaveLength(1);
   });
 
+  it("dismisses a single report and leaves the others open", async () => {
+    const league = await customLeague();
+    await report(alice, league.id);
+    await report(alice, league.id, league.teams[0]);
+    const { rows } = await db.pg.query<{ id: string }>(
+      "select id from public.reports where league_id = $1 and team_id is null",
+      [league.id],
+    );
+    await expect(db.asUser(alice, "select public.dismiss_report($1)", [rows[0].id])).rejects.toThrow(/admin_only/);
+    await db.asUser(admin, "select public.dismiss_report($1)", [rows[0].id]);
+    expect((await statuses(league.id)).sort()).toEqual(["dismissed", "open"]);
+    expect(await hiddenAt(league.id)).toBeNull();
+  });
+
   it("only lets admins resolve reports or remove logos", async () => {
     const league = await customLeague();
     for (const user of [alice, creator]) {
@@ -1431,6 +1445,100 @@ describe("reports", () => {
     const remove = "delete from storage.objects where name = $1 returning name";
     expect(await db.asUser(creator, remove, [path])).toHaveLength(0);
     expect(await db.asUser(admin, remove, [path])).toHaveLength(1);
+  });
+});
+
+describe("deleting your own account", () => {
+  const deleteAccount = (user: string) => db.asUser(user, "select public.delete_own_account()");
+  const exists = async (sql: string, id: string) => (await db.pg.query(sql, [id])).rows.length > 0;
+  const leagueExists = (id: string) => exists("select 1 from public.leagues where id = $1", id);
+  const seasonExists = (id: string) => exists("select 1 from public.seasons where id = $1", id);
+
+  it("needs a signed-in user, and only ever removes that user", async () => {
+    await expect(deleteAccount(null as unknown as string)).rejects.toThrow(/permission denied/);
+    const leaver = await db.createUser("Leaver");
+    const { rows: before } = await db.pg.query<{ n: number }>("select count(*)::int as n from auth.users");
+    await deleteAccount(leaver);
+    const { rows: after } = await db.pg.query<{ n: number }>("select count(*)::int as n from auth.users");
+    expect(after[0].n).toBe(before[0].n - 1);
+    expect(await exists("select 1 from public.profiles where id = $1", leaver)).toBe(false);
+    expect(await exists("select 1 from public.profiles where id = $1", alice)).toBe(true);
+  });
+
+  it("removes their predictions and memberships, so they leave leaderboards", async () => {
+    const leaver = await db.createUser("Leaver");
+    const league = await customLeague();
+    await join(leaver, league.id);
+    await join(alice, league.id);
+    await submit(leaver, league.season_id, league.teams);
+    await submit(alice, league.season_id, league.teams);
+    await db.passDeadline(league.season_id);
+    await updateStandings(creator, league.season_id, league.teams);
+
+    await deleteAccount(leaver);
+    const rows = await leaderboard(alice, league.id);
+    expect(rows.map((row) => row.user_id)).toEqual([alice]);
+    expect(await exists("select 1 from public.predictions where user_id = $1", leaver)).toBe(false);
+  });
+
+  it("deletes their custom leagues nobody else is in", async () => {
+    const leaver = await db.createUser("Leaver");
+    const [{ id }] = await db.asUser<{ id: string }>(
+      leaver,
+      "select public.create_custom_league('Solo', 'private', null, 4, now() + interval '30 days') as id",
+    );
+    const { rows } = await db.pg.query<{ season_id: string }>("select season_id from public.leagues where id = $1", [id]);
+    await deleteAccount(leaver);
+    expect(await leagueExists(id)).toBe(false);
+    expect(await seasonExists(rows[0].season_id)).toBe(false);
+  });
+
+  it("hands a shared league to its longest-standing member, who can then run it", async () => {
+    const leaver = await db.createUser("Leaver");
+    const [{ id }] = await db.asUser<{ id: string }>(
+      leaver,
+      "select public.create_custom_league('Shared', 'public', null, 4, now() + interval '30 days') as id",
+    );
+    const { rows } = await db.pg.query<{ season_id: string }>("select season_id from public.leagues where id = $1", [id]);
+    await saveTeams(leaver, rows[0].season_id, ["A", "B", "C", "D"].map((name) => ({ name })));
+    await db.asUser(leaver, "select public.publish_season($1)", [rows[0].season_id]);
+    await join(alice, id);
+    await db.pg.query("update public.memberships set joined_at = now() + interval '1 hour' where league_id = $1 and user_id = $2", [id, alice]);
+    await join(bob, id);
+    await db.pg.query("update public.memberships set joined_at = now() - interval '1 hour' where league_id = $1 and user_id = $2", [id, bob]);
+
+    await deleteAccount(leaver);
+    const { rows: after } = await db.pg.query<{ created_by: string }>("select created_by from public.leagues where id = $1", [id]);
+    expect(after[0].created_by).toBe(bob);
+
+    const teams = (await teamsOf(rows[0].season_id)).map((team) => team.id);
+    await db.passDeadline(rows[0].season_id);
+    await expect(updateStandings(bob, rows[0].season_id, teams)).resolves.toBeTruthy();
+    await expect(updateStandings(alice, rows[0].season_id, teams)).rejects.toThrow(/league_not_found/);
+  });
+
+  it("removes their empty preset league but leaves the official season", async () => {
+    const leaver = await db.createUser("Leaver");
+    const official = await officialSeason();
+    const preset = await presetLeague(official.season_id, "public", leaver);
+    await deleteAccount(leaver);
+    expect(await leagueExists(preset.id)).toBe(false);
+    expect(await seasonExists(official.season_id)).toBe(true);
+    expect(await leagueExists(official.id)).toBe(true);
+  });
+
+  it("hands over a shared preset league, and keeps a report they sent without their name", async () => {
+    const leaver = await db.createUser("Leaver");
+    const official = await officialSeason();
+    const preset = await presetLeague(official.season_id, "public", leaver);
+    await join(alice, preset.id);
+    await db.asUser(leaver, "insert into public.reports (league_id, reason) values ($1, 'Rude')", [official.id]);
+
+    await deleteAccount(leaver);
+    const { rows } = await db.pg.query<{ created_by: string }>("select created_by from public.leagues where id = $1", [preset.id]);
+    expect(rows[0].created_by).toBe(alice);
+    const reports = await db.pg.query<{ reported_by: string | null }>("select reported_by from public.reports where league_id = $1", [official.id]);
+    expect(reports.rows).toEqual([{ reported_by: null }]);
   });
 });
 

@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { LocalTime } from "@/components/local-time";
-import { RemoveLogoButton, ReportActions, UnhideButton } from "@/components/moderation-controls";
+import { ReportActions, SingleReportActions, UnhideButton } from "@/components/moderation-controls";
 import { PageFallback, PageShell } from "@/components/page-shell";
 import { TeamBadge } from "@/components/team-badge";
 import { getSession, isCurrentUserAdmin } from "@/lib/auth";
@@ -71,6 +71,7 @@ async function Reports() {
 
       {leagueIds.map((leagueId) => {
         const league = leagues.get(leagueId);
+        const leagueReports = reports.filter((report) => report.league_id === leagueId);
         return (
           <section
             key={leagueId}
@@ -88,9 +89,7 @@ async function Reports() {
               {league && <p className="text-sm text-muted capitalize">{league.type} league</p>}
             </div>
             <ul className="flex flex-col gap-3">
-              {reports
-                .filter((report) => report.league_id === leagueId)
-                .map((report) => {
+              {leagueReports.map((report) => {
                   const team = report.team_id ? teams.get(report.team_id) : undefined;
                   return (
                     <li key={report.id} className="border-t border-line pt-3">
@@ -105,12 +104,15 @@ async function Reports() {
                         {(report.reported_by && names.get(report.reported_by)) || "Someone"},{" "}
                         <LocalTime iso={report.created_at} />
                       </p>
-                      {team?.logo_path && <RemoveLogoButton teamId={team.id} teamName={team.name} />}
+                      <SingleReportActions
+                        reportId={report.id}
+                        logoTeam={team?.logo_path ? { id: team.id, name: team.name } : undefined}
+                      />
                     </li>
                   );
                 })}
             </ul>
-            <ReportActions leagueId={leagueId} />
+            <ReportActions leagueId={leagueId} reportCount={leagueReports.length} />
           </section>
         );
       })}
