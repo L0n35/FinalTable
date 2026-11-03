@@ -2,8 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { flushSync } from "react-dom";
-import { arrayMove } from "@dnd-kit/helpers";
 import { LeagueTable } from "@/components/league-table";
 import { RankingList } from "@/components/ranking-list";
 import { Sheet } from "@/components/sheet";
@@ -18,9 +16,7 @@ import {
   reconcileOrder,
   writeSavedOrder,
 } from "@/lib/saved-order";
-
-const sameOrder = (a: string[], b: string[] | null) =>
-  b !== null && a.length === b.length && a.every((id, index) => id === b[index]);
+import { buzz, sameOrder, useRanking } from "@/lib/use-ranking";
 
 function timeLeft(deadline: number, now: number) {
   const minutes = Math.max(0, Math.floor((deadline - now) / 60_000));
@@ -29,20 +25,6 @@ function timeLeft(deadline: number, now: number) {
   if (days > 0) return `${days}d ${hours}h left`;
   if (hours > 0) return `${hours}h ${minutes % 60}m left`;
   return `${minutes}m left`;
-}
-
-// Moves between places animate when the browser can, and apply instantly otherwise.
-function withTransition(update: () => void) {
-  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (reducedMotion || !("startViewTransition" in document)) {
-    update();
-    return;
-  }
-  document.startViewTransition(() => flushSync(update));
-}
-
-function buzz() {
-  if ("vibrate" in navigator) navigator.vibrate(10);
 }
 
 export type SavePrediction = (
@@ -95,16 +77,20 @@ export function PredictionScreen({
     if (!save) return readSavedOrder(submittedKey, alphabetical);
     return initialSubmitted && !needsReview ? initialSubmitted : null;
   });
-  const [order, setOrder] = useState(() => {
-    const draft = readSavedOrder(draftKey, alphabetical);
-    if (draft && !(submittedAt && isSavedOrderOlderThan(draftKey, submittedAt))) return draft;
-    if (submitted) return submitted;
-    return initialSubmitted ? reconcileOrder(initialSubmitted, alphabetical) : alphabetical;
-  });
-  const [past, setPast] = useState<string[][]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const nameOf = (id: string) => teamsById.get(id)?.name ?? "Team";
+  const { order, selectedId, setSelectedId, announcement, canUndo, changeOrder, place, undo, reset } =
+    useRanking({
+      initial: () => {
+        const draft = readSavedOrder(draftKey, alphabetical);
+        if (draft && !(submittedAt && isSavedOrderOlderThan(draftKey, submittedAt))) return draft;
+        if (submitted) return submitted;
+        return initialSubmitted ? reconcileOrder(initialSubmitted, alphabetical) : alphabetical;
+      },
+      resetTo: alphabetical,
+      resetMessage: "Reset to alphabetical order.",
+      nameOf,
+    });
   const [sheet, setSheet] = useState<"confirm" | "success" | null>(null);
-  const [announcement, setAnnouncement] = useState("");
   const [copied, setCopied] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const [reviewNeeded, setReviewNeeded] = useState(needsReview);
@@ -130,51 +116,6 @@ export function PredictionScreen({
       clearTimeout(lock);
     };
   }, [league.deadline]);
-
-  useEffect(() => {
-    if (!selectedId) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setSelectedId(null);
-    };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [selectedId]);
-
-  const nameOf = (id: string) => teamsById.get(id)?.name ?? "Team";
-
-  const changeOrder = (next: string[]) => {
-    if (sameOrder(next, order)) return;
-    setPast((history) => [...history, order]);
-    setOrder(next);
-    buzz();
-  };
-
-  const place = (id: string, index: number) => {
-    setAnnouncement(`${nameOf(id)} moved to position ${index + 1}.`);
-    withTransition(() => {
-      changeOrder(arrayMove(order, order.indexOf(id), index));
-      setSelectedId(null);
-    });
-  };
-
-  const undo = () => {
-    const previous = past.at(-1);
-    if (!previous) return;
-    setAnnouncement("Last move undone.");
-    withTransition(() => {
-      setPast(past.slice(0, -1));
-      setOrder(previous);
-      setSelectedId(null);
-    });
-  };
-
-  const reset = () => {
-    setAnnouncement("Reset to alphabetical order.");
-    withTransition(() => {
-      changeOrder(alphabetical);
-      setSelectedId(null);
-    });
-  };
 
   const submit = async () => {
     setSaveError(null);
@@ -280,7 +221,7 @@ export function PredictionScreen({
             <button
               type="button"
               onClick={undo}
-              disabled={past.length === 0}
+              disabled={!canUndo}
               className="h-11 px-2 text-sm font-semibold disabled:text-muted/50"
             >
               Undo

@@ -61,6 +61,9 @@ const MESSAGES: Record<string, string> = {
   league_not_open: "This league isn't open for predictions.",
   not_a_player: "Only players in this league can submit a prediction.",
   invalid_team_order: "The teams in this league have changed. Please reload and check your table.",
+  league_not_live: "This season isn't live, so its standings can't change.",
+  deadline_not_reached: "Standings can be updated once the league has started.",
+  no_standings_yet: "Update the standings at least once before finishing the season.",
   zones_fit: "Promotion and relegation overlap. Please check the format step.",
   playoff_between_zones: "Playoff places overlap with other zones. Please check the format step.",
   seasons_team_count_check: "A league needs between 4 and 40 teams.",
@@ -277,4 +280,31 @@ export async function rotateJoinCode(leagueId: string): Promise<Result<{ code: s
   if (error) return failure(error);
   revalidatePath("/", "layout");
   return { ok: true, code: data as string };
+}
+
+export async function updateStandings(seasonId: string, order: string[]): Promise<Result<object>> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("update_standings", {
+    p_season_id: seasonId,
+    p_team_order: order,
+  });
+  if (error) return failure(error);
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function finishSeason(seasonId: string): Promise<Result<object>> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("finish_season", { p_season_id: seasonId });
+  if (error) return failure(error);
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function reopenSeason(seasonId: string): Promise<Result<object>> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("reopen_season", { p_season_id: seasonId });
+  if (error) return failure(error);
+  revalidatePath("/", "layout");
+  return { ok: true };
 }

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { JoinButton } from "@/components/join-button";
 import { LeagueTable } from "@/components/league-table";
+import { LiveSeason, readLiveView } from "@/components/live-season";
 import { LocalTime } from "@/components/local-time";
 import { PageFallback, PageShell } from "@/components/page-shell";
 import { SharePanel } from "@/components/share-panel";
@@ -25,8 +26,14 @@ export const metadata: Metadata = { title: "League | Final Table" };
 
 const TYPE_LABELS = { official: "Official league", public: "Public league", private: "Private league" };
 
-async function League({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
+async function League({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ slug: string }>;
+  searchParams: Promise<{ tab?: string | string[]; player?: string | string[]; page?: string | string[] }>;
+}) {
+  const [{ slug }, query] = await Promise.all([params, searchParams]);
   const session = await getSession();
   const { supabase, userId } = session;
 
@@ -69,11 +76,9 @@ async function League({ params }: { params: Promise<{ slug: string }> }) {
   const isPreset = isPresetLeague(league);
   const locked = isLocked(league);
   const isDraft = league.status === "draft";
+  const isLive = !isDraft && locked;
   const prediction = ownPrediction.data as { team_order: string[]; needs_review: boolean } | null;
-  const teamsById = new Map(teams.map((team) => [team.id, team]));
-  const predictedTeams = (prediction?.needs_review ? [] : (prediction?.team_order ?? []))
-    .map((id) => teamsById.get(id))
-    .filter((team) => team !== undefined);
+  const ownOrder = prediction && !prediction.needs_review ? prediction.team_order : null;
   const title = seasonTitle(league);
 
   return (
@@ -82,7 +87,7 @@ async function League({ params }: { params: Promise<{ slug: string }> }) {
         <p className="text-sm font-semibold text-muted">
           {TYPE_LABELS[league.type]}
           {league.sport ? ` · ${league.sport}` : ""}
-          {isDraft ? " · Draft" : ""}
+          {isDraft ? " · Draft" : league.status === "finished" ? " · Finished" : isLive ? " · Live" : ""}
         </p>
         <h1 className="font-display text-4xl font-bold break-words">{league.name}</h1>
         {isPreset && <p className="text-muted">Playing {title}</p>}
@@ -123,15 +128,13 @@ async function League({ params }: { params: Promise<{ slug: string }> }) {
               ? "Edit your prediction"
               : "Make your prediction"}
         </Link>
-      ) : (
+      ) : role === "spectator" || !ownOrder ? (
         <p className="rounded-lg border border-line bg-surface p-3">
           {role === "spectator"
             ? "You're following this league as a spectator."
-            : predictedTeams.length > 0
-              ? "This league has started, and your prediction is locked in."
-              : "This league has started, and you didn't get a prediction in."}
+            : "This league has started, and you didn't get a prediction in."}
         </p>
-      )}
+      ) : null}
 
       {title && role === "player" && prediction && !locked && (
         <p className="text-sm text-muted">
@@ -140,11 +143,16 @@ async function League({ params }: { params: Promise<{ slug: string }> }) {
         </p>
       )}
 
-      {role === "player" && locked && predictedTeams.length > 0 && (
-        <section aria-label="Your prediction">
-          <h2 className="mb-2 font-display text-xl font-bold">Your prediction</h2>
-          <LeagueTable teams={predictedTeams} zones={zonesOf(league)} />
-        </section>
+      {isLive && (
+        <LiveSeason
+          session={session}
+          league={league}
+          teams={teams}
+          ownOrder={role === "player" ? ownOrder : null}
+          canUpdate={!isPreset && canManage}
+          canReopen={!isPreset && isAdmin}
+          view={readLiveView(query)}
+        />
       )}
 
       {!isDraft && (canManage || role || league.type !== "private") && (
@@ -165,25 +173,27 @@ async function League({ params }: { params: Promise<{ slug: string }> }) {
         </Link>
       )}
 
-      <section aria-label="Teams">
-        <h2 className="mb-2 font-display text-xl font-bold">{teams.length} teams</h2>
-        {isPreset && (
-          <p className="mb-2 text-sm text-muted">
-            Teams and standings update automatically from the official league.
-          </p>
-        )}
-        <ZoneLegend zones={zonesOf(league)} total={teams.length} />
-        <LeagueTable teams={teams} zones={zonesOf(league)} />
-      </section>
+      {!isLive && (
+        <section aria-label="Teams">
+          <h2 className="mb-2 font-display text-xl font-bold">{teams.length} teams</h2>
+          {isPreset && (
+            <p className="mb-2 text-sm text-muted">
+              Teams and standings update automatically from the official league.
+            </p>
+          )}
+          <ZoneLegend zones={zonesOf(league)} total={teams.length} />
+          <LeagueTable teams={teams} zones={zonesOf(league)} />
+        </section>
+      )}
     </div>
   );
 }
 
-export default function LeaguePage({ params }: PageProps<"/leagues/[slug]">) {
+export default function LeaguePage({ params, searchParams }: PageProps<"/leagues/[slug]">) {
   return (
     <PageShell>
       <Suspense fallback={<PageFallback />}>
-        <League params={params} />
+        <League params={params} searchParams={searchParams} />
       </Suspense>
     </PageShell>
   );

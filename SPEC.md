@@ -133,7 +133,8 @@ This is the most important screen in the app.
 
 - Predictions lock, and every player's picks become visible to the league.
 - Anyone arriving later can join as a spectator. Private leagues still require the code or link.
-- The league page has three tabs: **Leaderboard**, **Table** (with the player's prediction alongside it) and **Picks** (any member's predicted table).
+- The league page has three tabs: **Leaderboard**, **Table** (with the player's prediction alongside it) and **Picks** (any member's predicted table, which needs sign-in).
+- Before the first standings update, the leaderboard lists who is locked in, with no points. Big leagues are paged, 50 players at a time.
 
 ### 3.5 Update standings
 
@@ -282,7 +283,7 @@ Limits were checked on 2 November 2026 and can change.
 2. **Foundations:** Next.js and Supabase setup, Google login, the schema, security rules and their tests.
 3. **Creating and joining:** the setup wizard, logos and badges, codes and links, and in-app browser handling.
 4. **Predictions:** connect the ranking screen to real data, including drafts, submit, edit and deadline lock.
-5. **Live season:** standings updates, scoring, leaderboard, pick reveal and spectators.
+5. **Live season (done):** standings updates, scoring, leaderboard, pick reveal and spectators.
 6. **Discovery and admin:** Explore, official leagues and presets (done), reports and the admin queue.
 7. **Launch readiness:** calendar option, backups, usage alerts, legal pages and a final device pass.
 

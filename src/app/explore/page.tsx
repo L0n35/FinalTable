@@ -4,6 +4,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { LocalTime } from "@/components/local-time";
 import { PageFallback, PageShell } from "@/components/page-shell";
+import { TabNav } from "@/components/tab-nav";
 import { getSession, type Session } from "@/lib/auth";
 import { isLocked, LEAGUE_COLUMNS, type LeagueRow } from "@/lib/leagues";
 
@@ -168,25 +169,15 @@ function Tabs({ searchParams }: { searchParams: Promise<{ tab?: string | string[
 async function TabLinks({ searchParams }: { searchParams: Promise<{ tab?: string | string[] }> }) {
   const { tab } = await searchParams;
   const current = tab === "community" ? "community" : "official";
-  const options = [
-    { key: "official", label: "Official", href: "/explore" },
-    { key: "community", label: "Community", href: "/explore?tab=community" },
-  ];
   return (
-    <nav aria-label="League types" className="grid grid-cols-2 gap-1 rounded-lg bg-surface p-1">
-      {options.map((option) => (
-        <Link
-          key={option.key}
-          href={option.href}
-          aria-current={current === option.key ? "page" : undefined}
-          className={`flex h-10 items-center justify-center rounded-md font-semibold ${
-            current === option.key ? "bg-surface-raised text-foreground" : "text-muted"
-          }`}
-        >
-          {option.label}
-        </Link>
-      ))}
-    </nav>
+    <TabNav
+      label="League types"
+      current={current}
+      options={[
+        { key: "official", label: "Official", href: "/explore" },
+        { key: "community", label: "Community", href: "/explore?tab=community" },
+      ]}
+    />
   );
 }
 

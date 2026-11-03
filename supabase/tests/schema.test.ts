@@ -669,7 +669,7 @@ describe("preset leagues", () => {
     await submit(alice, official.season_id, official.teams);
     await db.passDeadline(official.season_id);
 
-    expect(await leaderboard(alice, friends.id)).toEqual([]);
+    expect((await leaderboard(alice, friends.id))[0]).toMatchObject({ user_id: alice, rank: null, total_points: null });
     await updateStandings(admin, official.season_id, official.teams);
 
     const standings = await db.asUser<{ team_order: string[] }>(
@@ -1220,6 +1220,55 @@ describe("standings and the leaderboard", () => {
     await db.passDeadline(league.season_id);
     await updateStandings(creator, league.season_id, league.teams.slice(0, 4));
     expect(await leaderboard(alice, league.id)).toHaveLength(0);
+  });
+
+  it("hides who has entered until the deadline", async () => {
+    const { id, season_id, teams } = await liveLeague();
+    await submit(alice, season_id, teams);
+    expect(await leaderboard(alice, id)).toEqual([]);
+  });
+
+  it("lists locked-in players with no points before the first update", async () => {
+    const { id, season_id, teams } = await liveLeague();
+    await submit(alice, season_id, teams);
+    await submit(bob, season_id, teams);
+    await db.passDeadline(season_id);
+
+    const rows = await leaderboard(alice, id);
+    expect(rows.map((row) => row.user_id)).toEqual([alice, bob]);
+    expect(rows[0]).toMatchObject({ rank: null, total_points: null, previous_rank: null, entry_count: 2 });
+  });
+
+  it("keeps ranks and the player count when reading one row or one page", async () => {
+    const { id, season_id, teams } = await liveLeague();
+    const [a, b, c, d] = teams;
+    await submit(alice, season_id, [a, b, c, d]);
+    await submit(bob, season_id, [d, c, b, a]);
+    await db.passDeadline(season_id);
+    await updateStandings(creator, season_id, teams);
+
+    const own = await db.asUser<BoardRow & { entry_count: number }>(
+      bob,
+      "select * from public.league_leaderboard($1) where user_id = $2",
+      [id, bob],
+    );
+    expect(own[0]).toMatchObject({ rank: 2, entry_count: 2 });
+    const second = await db.asUser<BoardRow>(
+      alice,
+      "select * from public.league_leaderboard($1) limit 1 offset 1",
+      [id],
+    );
+    expect(second[0].user_id).toBe(bob);
+  });
+
+  it("lets anyone signed out read a public leaderboard, but not the picks behind it", async () => {
+    const { id, season_id, teams } = await liveLeague();
+    await submit(alice, season_id, teams);
+    await db.passDeadline(season_id);
+    expect(await leaderboard(null as unknown as string, id)).toHaveLength(1);
+    await expect(
+      db.asUser(null, "select team_order from public.predictions where season_id = $1", [season_id]),
+    ).rejects.toThrow(/permission denied/);
   });
 
   it("won't show the leaderboard of a league you can't see", async () => {

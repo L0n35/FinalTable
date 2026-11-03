@@ -35,7 +35,9 @@ export async function YourLeagues() {
   );
 
   const statusOf = (league: LeagueRow) => {
-    if (league.status === "draft" || isLocked(league)) return null;
+    if (league.status === "draft") return null;
+    if (league.status === "finished") return { label: "Finished", urgent: false };
+    if (isLocked(league)) return { label: "Live", urgent: false };
     const needsReview = predictionFor.get(league.season_id);
     if (needsReview === undefined) return { label: "Prediction needed", urgent: true };
     return needsReview

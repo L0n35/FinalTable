@@ -33,6 +33,19 @@ export type TeamRow = {
   colour_secondary: string;
 };
 
+// A row of league_leaderboard. Points and ranks are empty until the first standings update.
+export type BoardRow = {
+  user_id: string;
+  display_name: string;
+  base_points: number | null;
+  bonus_points: number | null;
+  total_points: number | null;
+  exact_count: number | null;
+  rank: number | null;
+  previous_rank: number | null;
+  entry_count: number;
+};
+
 export type Team = {
   id: string;
   name: string;
@@ -139,4 +152,10 @@ export function formatDeadline(iso: string, timeZone?: string): string {
 
 export function isLocked(league: Pick<LeagueRow, "status" | "deadline">): boolean {
   return league.status !== "draft" && new Date(league.deadline).getTime() <= Date.now();
+}
+
+export function ordinal(position: number): string {
+  const lastTwo = position % 100;
+  if (lastTwo >= 11 && lastTwo <= 13) return `${position}th`;
+  return `${position}${["th", "st", "nd", "rd"][position % 10] ?? "th"}`;
 }
