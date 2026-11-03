@@ -70,8 +70,8 @@ export function OfficialStep({
   return (
     <form onSubmit={submit} className="flex flex-col gap-5">
       <p className="text-muted">
-        Official leagues belong to the site. Any admin can manage them, they appear on Explore, and
-        people can use them as a preset for their own leagues.
+        Official leagues belong to the site. Any admin can manage them, players see them on Explore
+        as global leagues, and people can play them in their own groups.
       </p>
 
       <Field label="Sport" htmlFor="official-sport">

@@ -16,6 +16,8 @@ export function TeamBadge({ team }: { team: Team }) {
     );
   }
 
+  const fontSize = team.initials.length >= 4 ? 9.5 : team.initials.length === 3 ? 11.5 : 14;
+
   return (
     <svg
       viewBox="0 0 36 40"
@@ -33,7 +35,7 @@ export function TeamBadge({ team }: { team: Team }) {
         x="18"
         y="24"
         textAnchor="middle"
-        fontSize="14"
+        fontSize={fontSize}
         fontWeight="700"
         fill={team.secondary}
         fontFamily="var(--font-barlow-condensed)"

@@ -15,7 +15,7 @@ export default function TermsPage() {
 
       <LegalSection title="What you upload">
         <p>
-          You are responsible for what you add, including league names, team names, logos and your display name. Only
+          You are responsible for what you add, including group names, team names, logos and your display name. Only
           upload images you have the right to use. Club and league logos are often trademarked or under copyright.
         </p>
         <p>
@@ -29,15 +29,15 @@ export default function TermsPage() {
           get around its limits.
         </p>
         <p>
-          Admins can hide or delete leagues and remove logos, and we may remove accounts that break these rules. Anyone
-          can report a problem from a league page.
+          Admins can hide or delete leagues and groups and remove logos, and we may remove accounts that break these
+          rules. Anyone can report a problem from a league or group page.
         </p>
       </LegalSection>
 
       <LegalSection title="Scores and results">
         <p>
-          League creators and admins enter standings by hand, so they can be wrong or late. Official leagues are run by
-          this site and aren&apos;t connected to or endorsed by any real league or club.
+          Group creators and admins enter standings by hand, so they can be wrong or late. Global leagues are run by this
+          site and aren&apos;t connected to or endorsed by any real league or club.
         </p>
       </LegalSection>
 

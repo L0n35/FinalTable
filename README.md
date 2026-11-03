@@ -47,6 +47,12 @@ set is_admin = true
 where id = (select id from auth.users where email = 'you@example.com');
 ```
 
+## Launch content
+
+After the migrations, run [supabase/seed/launch-leagues.sql](supabase/seed/launch-leagues.sql) once in the SQL Editor. It adds the global leagues with their teams and colours, plus the coming-soon list. It stops without changing anything if a season already exists.
+
+Anything in `supabase/private/` is git-ignored because it holds personal data, so it must never be committed.
+
 ## Backups
 
 [.github/workflows/backup.yml](.github/workflows/backup.yml) saves an encrypted copy of the database every night and keeps it for 14 days. Logo files aren't included. To turn it on, add two secrets under **GitHub > Settings > Secrets and variables > Actions**:

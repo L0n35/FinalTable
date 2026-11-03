@@ -1619,6 +1619,436 @@ describe("API surface", () => {
   });
 });
 
+describe("guest players", () => {
+  async function addGuest(name: string, leagueIds: string[], seasonId: string, order: string[]) {
+    const { rows } = await db.pg.query<{ id: string }>(
+      "insert into public.profiles (id, display_name, is_guest) values (gen_random_uuid(), $1, true) returning id",
+      [name],
+    );
+    const guest = rows[0].id;
+    for (const leagueId of leagueIds) {
+      await db.pg.query("insert into public.memberships (league_id, user_id, role) values ($1, $2, 'player')", [
+        leagueId,
+        guest,
+      ]);
+    }
+    await db.pg.query("insert into public.predictions (season_id, user_id, team_order) values ($1, $2, $3)", [
+      seasonId,
+      guest,
+      order,
+    ]);
+    return guest;
+  }
+
+  it("rank and score like anyone else, in every league they're in", async () => {
+    const official = await officialSeason();
+    const friends = await presetLeague(official.season_id, "public");
+    await join(alice, official.id);
+    await submit(alice, official.season_id, [...official.teams].reverse());
+    const guest = await addGuest("Guest G.", [official.id, friends.id], official.season_id, official.teams);
+    await db.passDeadline(official.season_id);
+    await updateStandings(admin, official.season_id, official.teams);
+
+    const inOfficial = await leaderboard(alice, official.id);
+    expect(inOfficial.map((row) => row.user_id)).toEqual([guest, alice]);
+    expect(inOfficial[0]).toMatchObject({ rank: 1, total_points: 26, exact_count: 4 });
+    expect((await leaderboard(alice, friends.id)).map((row) => row.user_id)).toEqual([guest]);
+  });
+
+  it("show signed-out visitors a name but never a table", async () => {
+    const official = await officialSeason();
+    await addGuest("Guest G.", [official.id], official.season_id, official.teams);
+    await db.passDeadline(official.season_id);
+
+    const board = await db.asUser<{ display_name: string }>(
+      null,
+      "select display_name from public.league_leaderboard($1)",
+      [official.id],
+    );
+    expect(board).toEqual([expect.objectContaining({ display_name: "Guest G." })]);
+    await expect(
+      db.asUser(null, "select team_order from public.predictions where season_id = $1", [official.season_id]),
+    ).rejects.toThrow(/permission denied/);
+    const signedIn = await db.asUser(alice, "select team_order from public.predictions where season_id = $1", [
+      official.season_id,
+    ]);
+    expect(signedIn).toHaveLength(1);
+  });
+
+  it("can't be created, edited or spotted through the API", async () => {
+    await expect(
+      db.asUser(
+        alice,
+        "insert into public.profiles (id, display_name, is_guest) values (gen_random_uuid(), 'Fake', true)",
+      ),
+    ).rejects.toThrow(/permission denied/);
+    await expect(db.asUser(alice, "select is_guest from public.profiles")).rejects.toThrow(/permission denied/);
+    await expect(db.asUser(alice, "update public.profiles set is_guest = true where id = $1", [alice])).rejects.toThrow(
+      /permission denied/,
+    );
+
+    const { rows } = await db.pg.query<{ id: string }>(
+      "insert into public.profiles (id, display_name, is_guest) values (gen_random_uuid(), 'Guest G.', true) returning id",
+    );
+    await db.asUser(alice, "update public.profiles set display_name = 'Changed' where id = $1", [rows[0].id]);
+    const after = await db.pg.query<{ display_name: string }>("select display_name from public.profiles where id = $1", [
+      rows[0].id,
+    ]);
+    expect(after.rows[0].display_name).toBe("Guest G.");
+    await db.pg.query("delete from public.profiles where id = $1", [rows[0].id]);
+  });
+
+  it("leave the leaderboard cleanly when removed", async () => {
+    const official = await officialSeason();
+    const guest = await addGuest("Guest G.", [official.id], official.season_id, official.teams);
+    await db.passDeadline(official.season_id);
+    await updateStandings(admin, official.season_id, official.teams);
+
+    await db.pg.query("delete from public.profiles where id = $1 and is_guest", [guest]);
+
+    expect(await leaderboard(alice, official.id)).toEqual([]);
+  });
+
+  it("don't stop a real account being deleted, in the app or the dashboard", async () => {
+    const inApp = await db.createUser("Leaver");
+    await db.asUser(inApp, "select public.delete_own_account()");
+    const dashboard = await db.createUser("Dashboard");
+    await db.pg.query("delete from auth.users where id = $1", [dashboard]);
+
+    const { rows } = await db.pg.query("select id from public.profiles where id = any($1)", [[inApp, dashboard]]);
+    expect(rows).toEqual([]);
+  });
+
+  it("don't get in the way of the rule against predictions after the deadline", async () => {
+    const official = await officialSeason();
+    await join(alice, official.id);
+    await db.passDeadline(official.season_id);
+    await expect(submit(alice, official.season_id, official.teams)).rejects.toThrow(/deadline_passed/);
+    await expect(submit(admin, official.season_id, official.teams)).rejects.toThrow(/deadline_passed|not_a_player/);
+  });
+});
+
+describe("public directory", () => {
+  type DirectoryRow = {
+    competition_name: string;
+    state: string;
+    opens_note: string | null;
+    league_id: string | null;
+    entrant_count: number | null;
+    crowd_team: string | null;
+    crowd_percent: number | null;
+    leader_name: string | null;
+    leader_points: number | null;
+    badges: { name: string; colour_primary: string }[] | null;
+  };
+  const directory = (user: string | null = null) =>
+    db.asUser<DirectoryRow>(user, "select * from public.public_directory()");
+  const inCompetition = async (name: string) =>
+    (await directory()).filter((row) => row.competition_name === name);
+
+  // Tables go straight in, because this is about counting them and not about how they arrive.
+  async function addEntrants(seasonId: string, count: number, firstPlace: string, others: string[]) {
+    for (let i = 0; i < count; i++) {
+      const { rows } = await db.pg.query<{ id: string }>(
+        "insert into public.profiles (id, display_name, is_guest) values (gen_random_uuid(), $1, true) returning id",
+        [`Player ${i}`],
+      );
+      await db.pg.query("insert into public.predictions (season_id, user_id, team_order) values ($1, $2, $3)", [
+        seasonId,
+        rows[0].id,
+        [firstPlace, ...others],
+      ]);
+    }
+  }
+
+  beforeEach(async () => {
+    await db.pg.exec("delete from public.profiles where is_guest");
+  });
+
+  it("lists open, live and finished global leagues, but never drafts or hidden ones", async () => {
+    await officialSeason("2030-31", "Open Cup");
+    const live = await officialSeason("2030-31", "Live Cup");
+    await db.passDeadline(live.season_id);
+    const finished = await officialSeason("2030-31", "Done Cup");
+    await db.passDeadline(finished.season_id);
+    await updateStandings(admin, finished.season_id, finished.teams);
+    await db.asUser(admin, "select public.finish_season($1)", [finished.season_id]);
+    await db.asUser(admin, "select public.create_official_season('Football', 'Draft Cup', '2030-31', 4, $1)", [FUTURE]);
+    const hidden = await officialSeason("2030-31", "Hidden Cup");
+    await db.asUser(admin, "select public.set_league_hidden($1, true)", [hidden.id]);
+
+    const states = Object.fromEntries((await directory()).map((row) => [row.competition_name, row.state]));
+    expect(states).toEqual({ "Open Cup": "open", "Live Cup": "live", "Done Cup": "finished" });
+  });
+
+  it("leaves out people's own groups", async () => {
+    const official = await officialSeason();
+    await presetLeague(official.season_id, "public");
+    await customLeague("public");
+    const rows = await directory();
+    expect(rows.map((row) => row.league_id)).toEqual([official.id]);
+  });
+
+  it("gives everyone the same answer, so it can be cached", async () => {
+    const official = await officialSeason();
+    await addEntrants(official.season_id, 10, official.teams[0], official.teams.slice(1));
+    const anon = await directory(null);
+    expect(await directory(alice)).toEqual(anon);
+    expect(await directory(admin)).toEqual(anon);
+  });
+
+  it("hides the player count and crowd pick until 10 people have entered", async () => {
+    const official = await officialSeason();
+    await addEntrants(official.season_id, 9, official.teams[0], official.teams.slice(1));
+    expect((await directory())[0]).toMatchObject({ entrant_count: null, crowd_team: null, crowd_percent: null });
+
+    await addEntrants(official.season_id, 1, official.teams[1], [official.teams[0], ...official.teams.slice(2)]);
+    expect((await directory())[0]).toMatchObject({ entrant_count: 10, crowd_team: "Team 01", crowd_percent: 90 });
+  });
+
+  it("rounds the crowd pick to 5%, so a newcomer's pick can't be worked out", async () => {
+    const official = await officialSeason();
+    const [a, b, ...rest] = official.teams;
+    await addEntrants(official.season_id, 7, a, [b, ...rest]);
+    await addEntrants(official.season_id, 4, b, [a, ...rest]);
+    expect((await directory())[0]).toMatchObject({ entrant_count: 11, crowd_team: "Team 01", crowd_percent: 65 });
+  });
+
+  it("doesn't count tables awaiting review", async () => {
+    const official = await officialSeason();
+    await addEntrants(official.season_id, 10, official.teams[0], official.teams.slice(1));
+    await db.pg.query(
+      "update public.predictions set needs_review = true where id = (select id from public.predictions where season_id = $1 limit 1)",
+      [official.season_id],
+    );
+    expect((await directory())[0]).toMatchObject({ entrant_count: null, crowd_team: null });
+  });
+
+  it("shows the real count after the deadline, however small", async () => {
+    const official = await officialSeason();
+    await addEntrants(official.season_id, 3, official.teams[0], official.teams.slice(1));
+    await db.passDeadline(official.season_id);
+    expect((await directory())[0]).toMatchObject({ state: "live", entrant_count: 3, crowd_team: null });
+  });
+
+  it("names the leader of a live league, from its own members", async () => {
+    const official = await officialSeason();
+    await join(alice, official.id);
+    await submit(alice, official.season_id, official.teams);
+    await db.passDeadline(official.season_id);
+    expect((await directory())[0]).toMatchObject({ leader_name: null, leader_points: null });
+
+    await updateStandings(admin, official.season_id, official.teams);
+    expect((await directory())[0]).toMatchObject({ leader_name: "Alice", leader_points: 26 });
+  });
+
+  it("includes up to 6 team badges", async () => {
+    await officialSeason("2030-31", "Small Cup");
+    await officialSeason("2030-31", "Big Cup", 8);
+    expect((await inCompetition("Small Cup"))[0].badges).toHaveLength(4);
+    const big = (await inCompetition("Big Cup"))[0].badges;
+    expect(big).toHaveLength(6);
+    expect(big?.[0]).toMatchObject({ name: "Team 01", colour_primary: expect.any(String) });
+  });
+
+  describe("coming soon", () => {
+    const addNote = (name: string, note: string) =>
+      db.pg.query("update public.competitions set opens_note = $1 where name = $2", [note, name]);
+
+    it("appears for a competition with a note and no season", async () => {
+      const { rows } = await db.pg.query<{ id: string }>("insert into public.sports (name) values ('Tennis') returning id");
+      await db.pg.query("insert into public.competitions (sport_id, name, opens_note) values ($1, 'Soon Cup', 'Next year')", [
+        rows[0].id,
+      ]);
+      await db.pg.query("insert into public.competitions (sport_id, name) values ($1, 'Old Test Cup')", [rows[0].id]);
+
+      expect(await inCompetition("Soon Cup")).toEqual([
+        expect.objectContaining({ state: "coming_soon", opens_note: "Next year", league_id: null }),
+      ]);
+      expect(await inCompetition("Old Test Cup")).toEqual([]);
+    });
+
+    it("gives way to an open season", async () => {
+      await officialSeason("2030-31", "Open Cup");
+      await addNote("Open Cup", "Next year");
+      expect((await inCompetition("Open Cup")).map((row) => row.state)).toEqual(["open"]);
+    });
+
+    it("sits alongside a live or finished season", async () => {
+      const live = await officialSeason("2030-31", "Live Cup");
+      await db.passDeadline(live.season_id);
+      await addNote("Live Cup", "Next year");
+      expect((await inCompetition("Live Cup")).map((row) => row.state).sort()).toEqual(["coming_soon", "live"]);
+    });
+
+    it("isn't held back by a hidden season", async () => {
+      const hidden = await officialSeason("2030-31", "Hidden Cup");
+      await addNote("Hidden Cup", "Next year");
+      await db.asUser(admin, "select public.set_league_hidden($1, true)", [hidden.id]);
+      expect((await inCompetition("Hidden Cup")).map((row) => row.state)).toEqual(["coming_soon"]);
+    });
+  });
+});
+
+describe("public groups", () => {
+  type GroupRow = { league_id: string; name: string; state: string; player_count: number };
+  const groups = (query: string | null = null, minPlayers = 1, limit = 30, user: string | null = null) =>
+    db.asUser<GroupRow>(user, "select * from public.public_groups($1, $2, $3)", [query, minPlayers, limit]);
+  const named = async (name: string, by = creator) => {
+    const league = await customLeague("public", 4, by);
+    await db.pg.query("update public.leagues set name = $1 where id = $2", [name, league.id]);
+    return league;
+  };
+
+  it("lists public groups, biggest first, and never private, hidden or draft ones", async () => {
+    const small = await named("Small Group");
+    const big = await named("Big Group");
+    await join(alice, big.id);
+    await join(bob, big.id);
+    const secret = await customLeague("private");
+    const hidden = await named("Hidden Group");
+    await db.asUser(admin, "select public.set_league_hidden($1, true)", [hidden.id]);
+    await draftCustom("public");
+    const official = await officialSeason();
+
+    const rows = await groups();
+    expect(rows.map((row) => row.league_id)).toEqual([big.id, small.id]);
+    expect(rows[0]).toMatchObject({ player_count: 3, state: "open" });
+    expect(rows.map((row) => row.league_id)).not.toContain(secret.id);
+    expect(rows.map((row) => row.league_id)).not.toContain(official.id);
+  });
+
+  it("includes groups playing a real league, with its name", async () => {
+    const official = await officialSeason();
+    const friends = await presetLeague(official.season_id, "public");
+    const rows = await db.asUser<{ league_id: string; competition_name: string; sport: string }>(
+      null,
+      "select league_id, competition_name, sport from public.public_groups()",
+    );
+    expect(rows).toEqual([{ league_id: friends.id, competition_name: "Premier League", sport: "Football" }]);
+  });
+
+  it("only counts players, so spectators and an empty group don't look busy", async () => {
+    const league = await named("Watched");
+    await db.passDeadline(league.season_id);
+    await join(alice, league.id);
+    expect((await groups())[0]).toMatchObject({ player_count: 1 });
+
+    await db.pg.query("update public.memberships set role = 'spectator' where league_id = $1", [league.id]);
+    expect(await groups()).toEqual([]);
+  });
+
+  it("can require a minimum number of players", async () => {
+    const small = await named("Small Group");
+    const big = await named("Big Group");
+    await join(alice, big.id);
+    await join(bob, big.id);
+    expect((await groups(null, 3)).map((row) => row.league_id)).toEqual([big.id]);
+    expect((await groups(null, 1)).map((row) => row.league_id)).toContain(small.id);
+  });
+
+  it("searches names as plain text", async () => {
+    const quiz = await named("Pub Quiz League");
+    await named("100% Effort");
+    await named("Other");
+    expect((await groups("quiz")).map((row) => row.league_id)).toEqual([quiz.id]);
+    expect((await groups("100%")).map((row) => row.name)).toEqual(["100% Effort"]);
+    expect(await groups("%")).toHaveLength(1);
+    expect(await groups("zzz")).toEqual([]);
+    expect(await groups("   ")).toHaveLength(3);
+  });
+
+  it("applies the limit, capped at 100", async () => {
+    await named("One");
+    await named("Two");
+    expect(await groups(null, 1, 1)).toHaveLength(1);
+    expect(await groups(null, 1, 100000)).toHaveLength(2);
+  });
+
+  it("gives the same answer whoever asks", async () => {
+    await named("One");
+    expect(await groups(null, 1, 30, alice)).toEqual(await groups());
+  });
+});
+
+describe("launch content columns", () => {
+  it("keeps zone wording and team codes when a season is copied", async () => {
+    const source = await officialSeason("2026-27");
+    await db.pg.query(
+      `update public.seasons
+       set promotion_label = 'Champions League', playoff_label = 'Europe', relegation_label = 'Down'
+       where id = $1`,
+      [source.season_id],
+    );
+    await db.pg.query("update public.teams set short_name = 'ABC' where id = $1", [source.teams[0]]);
+
+    const [{ id }] = await db.asUser<{ id: string }>(
+      admin,
+      "select public.create_official_season('Football', 'Premier League', '2027-28', 4, $1, $2) as id",
+      [FUTURE, source.season_id],
+    );
+    const copied = await db.pg.query<{ promotion_label: string; playoff_label: string; relegation_label: string }>(
+      "select promotion_label, playoff_label, relegation_label from public.league_details where id = $1",
+      [id],
+    );
+    expect(copied.rows[0]).toEqual({
+      promotion_label: "Champions League",
+      playoff_label: "Europe",
+      relegation_label: "Down",
+    });
+    const season = (await infoOf(id)).season_id;
+    const codes = await db.pg.query<{ short_name: string | null }>(
+      "select short_name from public.teams where season_id = $1 and short_name is not null",
+      [season],
+    );
+    expect(codes.rows).toEqual([{ short_name: "ABC" }]);
+  });
+
+  it("defaults zone wording for a new season", async () => {
+    const league = await customLeague();
+    const { rows } = await db.pg.query(
+      "select promotion_label, playoff_label, relegation_label from public.league_details where id = $1",
+      [league.id],
+    );
+    expect(rows[0]).toEqual({ promotion_label: "Promoted", playoff_label: "Playoffs", relegation_label: "Relegated" });
+  });
+
+  it("keeps team codes when a team list is saved again", async () => {
+    const league = await draftCustom();
+    await saveTeams(creator, league.season_id, named(...teamNames(4)));
+    const before = await teamsOf(league.season_id);
+    await db.pg.query("update public.teams set short_name = 'XYZ' where id = $1", [before[0].id]);
+
+    await saveTeams(
+      creator,
+      league.season_id,
+      before.map(({ id, name }) => ({ id, name: name === before[0].name ? "Renamed" : name })),
+    );
+
+    const { rows } = await db.pg.query<{ name: string; short_name: string }>(
+      "select name, short_name from public.teams where id = $1",
+      [before[0].id],
+    );
+    expect(rows[0]).toEqual({ name: "Renamed", short_name: "XYZ" });
+  });
+
+  it("rejects bad codes and colours", async () => {
+    const league = await customLeague();
+    await expect(
+      db.pg.query("update public.teams set short_name = 'too long' where id = $1", [league.teams[0]]),
+    ).rejects.toThrow(/short_name/);
+    await expect(
+      db.pg.query("update public.competitions set accent = 'red' where false or true"),
+    ).resolves.toBeDefined();
+  });
+
+  it("doesn't let a signed-out visitor read a private group through the view", async () => {
+    const secret = await customLeague("private");
+    const rows = await db.asUser(null, "select id, join_code from public.league_details where id = $1", [secret.id]);
+    expect(rows).toEqual([]);
+  });
+});
+
 describe("moving existing data to seasons", () => {
   it("keeps custom leagues working and turns host leagues into ownerless official ones", async () => {
     const old = await createDb("20261104090000");

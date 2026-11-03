@@ -23,11 +23,16 @@ export type LeagueRow = {
   competition_name: string | null;
   season_label: string | null;
   sport: string | null;
+  promotion_label: string;
+  playoff_label: string;
+  relegation_label: string;
+  competition_accent: string | null;
 };
 
 export type TeamRow = {
   id: string;
   name: string;
+  short_name: string | null;
   logo_path: string | null;
   colour_primary: string;
   colour_secondary: string;
@@ -60,11 +65,15 @@ export type Zones = {
   playoffFrom: number | null;
   playoffTo: number | null;
   relegation: number;
+  // Words for each zone, such as "Champions League" or "Finals". Left out, the defaults apply.
+  promotionLabel?: string;
+  playoffLabel?: string;
+  relegationLabel?: string;
 };
 
 export const LEAGUE_COLUMNS =
-  "id, slug, join_code, type, name, created_by, hidden_at, season_id, team_count, deadline, promotion_count, playoff_from, playoff_to, relegation_count, status, competition_id, competition_name, season_label, sport";
-export const TEAM_COLUMNS = "id, name, logo_path, colour_primary, colour_secondary";
+  "id, slug, join_code, type, name, created_by, hidden_at, season_id, team_count, deadline, promotion_count, playoff_from, playoff_to, relegation_count, status, competition_id, competition_name, season_label, sport, promotion_label, playoff_label, relegation_label, competition_accent";
+export const TEAM_COLUMNS = "id, name, short_name, logo_path, colour_primary, colour_secondary";
 
 export const MIN_TEAMS = 4;
 export const MAX_TEAMS = 40;
@@ -100,7 +109,7 @@ export function toTeam(row: TeamRow): Team {
   return {
     id: row.id,
     name: row.name,
-    initials: initialsFor(row.name),
+    initials: row.short_name ?? initialsFor(row.name),
     primary: row.colour_primary,
     secondary: row.colour_secondary,
     logoUrl: row.logo_path ? logoUrl(row.logo_path) : null,
@@ -113,8 +122,23 @@ export function zonesOf(league: LeagueRow): Zones {
     playoffFrom: league.playoff_from,
     playoffTo: league.playoff_to,
     relegation: league.relegation_count,
+    promotionLabel: league.promotion_label,
+    playoffLabel: league.playoff_label,
+    relegationLabel: league.relegation_label,
   };
 }
+
+// Everything is a league in the database. People see official ones as leagues and their own as groups.
+export function leagueNoun(league: Pick<LeagueRow, "type">): "league" | "group" {
+  return league.type === "official" ? "league" : "group";
+}
+
+// "Official" beside a real league's name would read as if that league endorses it.
+export const LEAGUE_TYPE_LABELS: Record<LeagueType, string> = {
+  official: "Global league",
+  public: "Public group",
+  private: "Private group",
+};
 
 // A league playing an official season that isn't the official league itself.
 export function isPresetLeague(league: Pick<LeagueRow, "type" | "competition_id">): boolean {

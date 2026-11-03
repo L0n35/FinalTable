@@ -2,7 +2,6 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AccountSettings } from "@/components/account-settings";
-import { LegalLinks } from "@/components/legal-links";
 import { PageFallback, PageShell } from "@/components/page-shell";
 import { getSession } from "@/lib/auth";
 
@@ -30,7 +29,6 @@ export default function AccountPage() {
         <Suspense fallback={<PageFallback />}>
           <Account />
         </Suspense>
-        <LegalLinks />
       </div>
     </PageShell>
   );

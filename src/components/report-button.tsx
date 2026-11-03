@@ -7,9 +7,11 @@ import { Field, inputClass } from "@/components/wizard/fields";
 
 export function ReportButton({
   leagueId,
+  noun,
   logoTeams,
 }: {
   leagueId: string;
+  noun: "league" | "group";
   // Teams with an uploaded logo, which can be reported on their own.
   logoTeams: { id: string; name: string }[];
 }) {
@@ -48,7 +50,7 @@ export function ReportButton({
         onClick={() => setOpen(true)}
         className="h-11 w-full text-sm font-semibold text-muted underline"
       >
-        Report a problem with this league
+        Report a problem with this {noun}
       </button>
       <Sheet open={open} label="Report a problem" onClose={close}>
         {sent ? (
@@ -74,7 +76,7 @@ export function ReportButton({
                   onChange={(event) => setTeamId(event.target.value)}
                   className={inputClass}
                 >
-                  <option value="">The league</option>
+                  <option value="">The {noun}</option>
                   {logoTeams.map((team) => (
                     <option key={team.id} value={team.id}>
                       Logo: {team.name}

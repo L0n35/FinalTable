@@ -106,7 +106,7 @@ export function PresetPicker({ presets, onBack }: { presets: Preset[]; onBack: (
   if (presets.length === 0) {
     return (
       <div className="flex flex-col gap-4">
-        <p className="text-muted">No presets are open right now. You can create a custom league instead.</p>
+        <p className="text-muted">No real leagues are open right now. You can make your own instead.</p>
         {backButton}
       </div>
     );
@@ -121,10 +121,10 @@ export function PresetPicker({ presets, onBack }: { presets: Preset[]; onBack: (
             {preset.team_count} teams · Locks <LocalTime iso={preset.deadline} />
           </p>
           <p className="mt-1 text-sm text-muted">
-            Teams, deadline and standings come from the official league and update automatically.
+            Teams, deadline and standings come from the global league and update automatically.
           </p>
         </div>
-        <Field label="League name" htmlFor="league-name">
+        <Field label="Group name" htmlFor="league-name">
           <input
             id="league-name"
             required
@@ -138,7 +138,7 @@ export function PresetPicker({ presets, onBack }: { presets: Preset[]; onBack: (
         <FormError message={error} />
         <StepActions
           onBack={back}
-          primaryLabel={isPending ? "Creating…" : "Create league"}
+          primaryLabel={isPending ? "Creating…" : "Create group"}
           primaryDisabled={isPending}
         />
       </form>

@@ -9,22 +9,26 @@ export default function PrivacyPage() {
       <LegalSection title="What we collect">
         <p>When you sign in with Google, we receive your name, email address and profile picture address.</p>
         <p>
-          When you play, we store your display name, the leagues you join, your predictions, any leagues and team
-          logos you create, and any reports you send.
+          When you play, we store your display name, the leagues and groups you join, your predictions, any groups and
+          team logos you create, and any reports you send.
         </p>
       </LegalSection>
 
       <LegalSection title="Who can see it">
         <p>Your email address is never shown to other players.</p>
         <p>
-          Your display name appears to people in your leagues, and on the leaderboards of public and official leagues,
-          including to people who aren&apos;t signed in.
+          Your display name appears to people in your leagues and groups, and on the leaderboards of global leagues and
+          public groups, including to people who aren&apos;t signed in.
         </p>
         <p>
-          Your predictions stay hidden until a league&apos;s deadline. After that, signed-in people who can see a league
-          you play in can see your table for that season.
+          Your predictions stay hidden until the deadline. After that, signed-in people who can see a league or group you
+          play in can see your table for that season.
         </p>
-        <p>Admins can see all leagues, and the name of whoever sent a report.</p>
+        <p>Admins can see all leagues and groups, and the name of whoever sent a report.</p>
+        <p>
+          An admin can add a table that a friend gave them directly. It appears under a short name such as
+          &quot;Alex P.&quot;, with no account attached. Contact us to have one changed or removed.
+        </p>
       </LegalSection>
 
       <LegalSection title="How we use it">
@@ -51,12 +55,12 @@ export default function PrivacyPage() {
       <LegalSection title="Keeping and deleting your data">
         <p>
           You can change your display name or delete your account at any time on your account page. Deleting it removes
-          your profile, memberships and predictions straight away, and leagues nobody else is in.
+          your profile, memberships and predictions straight away, and any groups nobody else is in.
         </p>
         <p>
-          A league other people are in carries on and passes to its longest-standing member. Reports you sent stay,
+          A group other people are in carries on and passes to its longest-standing member. Reports you sent stay,
           without your name. Encrypted backups are kept for 14 days and then removed. Uploaded logo files can stay in
-          storage after their league is gone. Contact us if you want one removed.
+          storage after their group is gone. Contact us if you want one removed.
         </p>
       </LegalSection>
     </LegalPage>

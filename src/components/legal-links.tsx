@@ -13,3 +13,12 @@ export function LegalLinks() {
     </p>
   );
 }
+
+export function SiteFooter() {
+  return (
+    <footer className="text-center text-sm text-muted">
+      <LegalLinks />
+      <p>Independent fan game, not affiliated with any league or club.</p>
+    </footer>
+  );
+}

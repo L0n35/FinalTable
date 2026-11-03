@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { LeagueTable } from "@/components/league-table";
 import { LocalTime } from "@/components/local-time";
+import { ScoringNote } from "@/components/scoring-note";
 import { SeasonControl } from "@/components/season-control";
 import { TabNav } from "@/components/tab-nav";
 import { ZoneLegend } from "@/components/zone-legend";
 import type { Session } from "@/lib/auth";
 import {
   initialsFor,
+  leagueNoun,
   ordinal,
   zonesOf,
   type BoardRow,
@@ -140,23 +142,6 @@ function Pager({ path, tab, page, total }: { path: string; tab: string; page: nu
   );
 }
 
-function ScoringNote({ league }: { league: LeagueRow }) {
-  const bonuses = ["+10 for the champion"];
-  if (league.promotion_count > 0) bonuses.push("+5 for each promoted team");
-  if (league.relegation_count > 0) bonuses.push("+5 for each relegated team");
-  if (league.playoff_from !== null) bonuses.push("+3 for each playoff team");
-  return (
-    <details className="text-sm text-muted">
-      <summary className="cursor-pointer py-2 font-semibold">How scoring works</summary>
-      <p>
-        Each team earns {league.team_count} points, minus one for every place you were off. Bonuses:{" "}
-        {bonuses.join(", ")}. A zone bonus counts when you put a team in the right zone, whatever its
-        exact place. Level players are split by exact picks.
-      </p>
-    </details>
-  );
-}
-
 function PositionNote({ label, position, exact }: { label: string; position: number; exact: boolean }) {
   return (
     <span className={exact ? "font-semibold text-promotion" : "text-muted"}>
@@ -185,6 +170,7 @@ export async function LiveSeason({
   const path = `/leagues/${league.slug}`;
   const zones = zonesOf(league);
   const finished = league.status === "finished";
+  const noun = leagueNoun(league);
   const board = () => supabase.rpc("league_leaderboard", { p_league_id: league.id });
 
   const [latestResult, ownResult, winnersResult] = await Promise.all([
@@ -261,7 +247,7 @@ export async function LiveSeason({
         )}
         {rows.length === 0 ? (
           <p className="text-muted">
-            {view.page > 1 ? "There's nobody on this page." : "Nobody got a prediction in for this league."}
+            {view.page > 1 ? "There's nobody on this page." : `Nobody got a prediction in for this ${noun}.`}
           </p>
         ) : (
           <ol className="flex flex-col gap-1.5">
@@ -302,7 +288,7 @@ export async function LiveSeason({
       <div className="flex flex-col gap-2">
         {updatedLine}
         {league.competition_id && league.type !== "official" && (
-          <p className="text-sm text-muted">Updates automatically from the official league.</p>
+          <p className="text-sm text-muted">Updates automatically from the global league.</p>
         )}
         <ZoneLegend zones={zones} total={teams.length} />
         <LeagueTable
@@ -398,7 +384,7 @@ export async function LiveSeason({
       <div className="flex flex-col gap-2">
         {rows.length === 0 ? (
           <p className="text-muted">
-            {view.page > 1 ? "There's nobody on this page." : "Nobody got a prediction in for this league."}
+            {view.page > 1 ? "There's nobody on this page." : `Nobody got a prediction in for this ${noun}.`}
           </p>
         ) : (
           <>
@@ -421,7 +407,7 @@ export async function LiveSeason({
     );
   }
 
-  const sharedNote = league.competition_id ? "This applies to every league playing this season." : undefined;
+  const sharedNote = league.competition_id ? "This applies to every league and group playing this season." : undefined;
 
   return (
     <>

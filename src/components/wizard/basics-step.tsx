@@ -63,9 +63,9 @@ export function DeadlineField({
   const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   return (
     <Field
-      label="League start"
+      label="Predictions lock"
       htmlFor="league-deadline"
-      hint={`Predictions lock at this time. Your time zone: ${timeZone}.`}
+      hint={`Usually the first game. Your time zone: ${timeZone}.`}
     >
       <input
         id="league-deadline"
@@ -82,8 +82,8 @@ export function DeadlineField({
 // Returns an ISO date, or an error message people can act on.
 export function readDeadline(value: string): { iso: string } | { error: string } {
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return { error: "Please choose a start date and time." };
-  if (date.getTime() <= Date.now()) return { error: "The start date needs to be in the future." };
+  if (Number.isNaN(date.getTime())) return { error: "Please choose when predictions lock." };
+  if (date.getTime() <= Date.now()) return { error: "The lock time needs to be in the future." };
   return { iso: date.toISOString() };
 }
 
@@ -138,7 +138,7 @@ export function BasicsStep({
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-5">
-      <Field label="League name" htmlFor="league-name">
+      <Field label={isOfficial ? "League name" : "Group name"} htmlFor="league-name">
         <input
           id="league-name"
           required

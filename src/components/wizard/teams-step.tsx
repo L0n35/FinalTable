@@ -21,6 +21,7 @@ type Row = {
   key: string;
   id?: string;
   name: string;
+  shortName: string | null;
   logoPath: string | null;
   primary: string;
   secondary: string;
@@ -28,7 +29,7 @@ type Row = {
 
 function blankRow(index: number): Row {
   const [primary, secondary] = BADGE_COLOURS[index % BADGE_COLOURS.length];
-  return { key: newId(), name: "", logoPath: null, primary, secondary };
+  return { key: newId(), name: "", shortName: null, logoPath: null, primary, secondary };
 }
 
 function initialRows(teams: TeamRow[], count: number): Row[] {
@@ -36,6 +37,7 @@ function initialRows(teams: TeamRow[], count: number): Row[] {
     key: team.id,
     id: team.id,
     name: team.name,
+    shortName: team.short_name,
     logoPath: team.logo_path,
     primary: team.colour_primary,
     secondary: team.colour_secondary,
@@ -195,7 +197,7 @@ export function TeamsStep({
           const preview = {
             id: row.key,
             name: row.name,
-            initials: initialsFor(row.name),
+            initials: row.shortName ?? initialsFor(row.name),
             primary: row.primary,
             secondary: row.secondary,
             logoUrl: row.logoPath ? logoUrl(row.logoPath) : null,

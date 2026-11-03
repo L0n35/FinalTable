@@ -7,7 +7,15 @@ import { ReportActions, SingleReportActions, UnhideButton } from "@/components/m
 import { PageFallback, PageShell } from "@/components/page-shell";
 import { TeamBadge } from "@/components/team-badge";
 import { getSession, isCurrentUserAdmin } from "@/lib/auth";
-import { LEAGUE_COLUMNS, TEAM_COLUMNS, toTeam, type LeagueRow, type TeamRow } from "@/lib/leagues";
+import {
+  LEAGUE_COLUMNS,
+  LEAGUE_TYPE_LABELS,
+  leagueNoun,
+  TEAM_COLUMNS,
+  toTeam,
+  type LeagueRow,
+  type TeamRow,
+} from "@/lib/leagues";
 
 export const metadata: Metadata = { title: "Reports | Final Table" };
 
@@ -86,7 +94,11 @@ async function Reports() {
               ) : (
                 <p className="font-semibold">League</p>
               )}
-              {league && <p className="text-sm text-muted capitalize">{league.type} league</p>}
+              {league && (
+                <p className="text-sm text-muted">
+                  {league.type === "official" ? "Official league" : LEAGUE_TYPE_LABELS[league.type]}
+                </p>
+              )}
             </div>
             <ul className="flex flex-col gap-3">
               {leagueReports.map((report) => {
@@ -112,7 +124,11 @@ async function Reports() {
                   );
                 })}
             </ul>
-            <ReportActions leagueId={leagueId} reportCount={leagueReports.length} />
+            <ReportActions
+              leagueId={leagueId}
+              reportCount={leagueReports.length}
+              noun={league ? leagueNoun(league) : "league"}
+            />
           </section>
         );
       })}

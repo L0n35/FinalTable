@@ -40,7 +40,7 @@ function LeagueCard({ league, joined }: { league: LeagueRow; joined: boolean }) 
 
 function OfficialTab({ leagues, joined }: { leagues: LeagueRow[]; joined: Set<string> }) {
   if (leagues.length === 0) {
-    return <p className="text-muted">No official leagues are open yet. Check back soon.</p>;
+    return <p className="text-muted">No leagues are open yet. Check back soon.</p>;
   }
 
   const sports = [...new Set(leagues.map((league) => league.sport ?? "Other"))].sort();
@@ -90,10 +90,10 @@ function CommunityTab({
         <input
           type="search"
           name="q"
-          aria-label="Search public leagues"
+          aria-label="Search public groups"
           defaultValue={query}
           maxLength={60}
-          placeholder="Search public leagues"
+          placeholder="Search public groups"
           className="h-12 min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 placeholder:text-muted/70 focus-visible:outline-2 focus-visible:outline-accent"
         />
         <button type="submit" className="h-12 shrink-0 rounded-lg border border-line px-4 font-semibold">
@@ -102,7 +102,7 @@ function CommunityTab({
       </form>
       {leagues.length === 0 ? (
         <p className="text-muted">
-          {query ? "No public leagues match that search." : "No public leagues yet. Why not create one?"}
+          {query ? "No public groups match that search." : "No public groups yet. Why not create one?"}
         </p>
       ) : (
         <ul className="flex flex-col gap-2">
@@ -176,8 +176,8 @@ async function TabLinks({ searchParams }: { searchParams: Promise<{ tab?: string
       label="League types"
       current={current}
       options={[
-        { key: "official", label: "Official", href: "/explore" },
-        { key: "community", label: "Community", href: "/explore?tab=community" },
+        { key: "official", label: "Leagues", href: "/explore" },
+        { key: "community", label: "Groups", href: "/explore?tab=community" },
       ]}
     />
   );

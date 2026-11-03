@@ -6,7 +6,7 @@ import { WizardLoader } from "@/components/wizard/wizard-loader";
 import { getSession, isCurrentUserAdmin } from "@/lib/auth";
 import { isLocked, LEAGUE_COLUMNS, type LeagueRow } from "@/lib/leagues";
 
-export const metadata: Metadata = { title: "New league | Final Table" };
+export const metadata: Metadata = { title: "Create a group | Final Table" };
 
 async function NewLeague({ searchParams }: { searchParams: Promise<{ kind?: string | string[] }> }) {
   const { kind } = await searchParams;

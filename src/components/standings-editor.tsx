@@ -68,7 +68,7 @@ export function StandingsEditor({
     <div className="mx-auto w-full max-w-lg">
       <header className="sticky top-0 z-10 border-b border-line bg-background px-4 pt-[max(12px,env(safe-area-inset-top))] pb-1">
         <h1 className="flex min-w-0 items-baseline gap-2 font-display text-2xl font-bold">
-          <Link href={leaguePath} aria-label="Back to the league" className="-my-2 -ml-1 px-1 py-2">
+          <Link href={leaguePath} aria-label="Go back" className="-my-2 -ml-1 px-1 py-2">
             ‹
           </Link>
           <span className="truncate">Update standings</span>

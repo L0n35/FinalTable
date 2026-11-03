@@ -193,7 +193,7 @@ export function PredictionScreen({
             href={backHref}
             className="flex h-13 items-center justify-center rounded-lg bg-accent font-display text-xl font-bold text-accent-ink"
           >
-            Back to the league
+            Go back
           </Link>
         )}
         {finalOrder.length > 0 && <LeagueTable teams={finalOrder} zones={league.zones} />}
@@ -207,7 +207,7 @@ export function PredictionScreen({
         <div className="flex items-baseline justify-between gap-3">
           <h1 className="flex min-w-0 items-baseline gap-2 font-display text-2xl font-bold">
             {backHref && (
-              <Link href={backHref} aria-label="Back to the league" className="-my-2 -ml-1 px-1 py-2">
+              <Link href={backHref} aria-label="Go back" className="-my-2 -ml-1 px-1 py-2">
                 ‹
               </Link>
             )}
@@ -245,8 +245,7 @@ export function PredictionScreen({
       <main className="px-4 pt-3 pb-32">
         {reviewNeeded && (
           <p role="status" className="mb-3 rounded-lg border border-accent bg-surface p-3">
-            The teams in this league have changed. Check your table, then submit it again to stay
-            in the running.
+            The teams have changed. Check your table, then submit it again to stay in the running.
           </p>
         )}
         <ZoneLegend zones={league.zones} total={order.length} />
@@ -354,7 +353,7 @@ export function PredictionScreen({
           <div className="mt-3 flex items-center justify-center gap-3">
             <TeamBadge team={champion} />
             <p>
-              <span className="block text-sm text-muted">Your champion</span>
+              <span className="block text-sm text-muted">Your top pick</span>
               <span className="font-semibold">{champion.name}</span>
             </p>
           </div>
@@ -373,7 +372,7 @@ export function PredictionScreen({
             onClick={share}
             className="h-12 rounded-lg border border-line font-semibold"
           >
-            {copied ? "Link copied" : "Share league"}
+            {copied ? "Link copied" : "Invite friends"}
           </button>
           <button
             type="button"

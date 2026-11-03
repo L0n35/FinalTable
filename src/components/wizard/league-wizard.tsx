@@ -11,12 +11,12 @@ import { FormatStep } from "@/components/wizard/format-step";
 import { OfficialStep, type ExistingSeason } from "@/components/wizard/official-step";
 import { PresetPicker, type Preset } from "@/components/wizard/preset-picker";
 import { TeamsStep } from "@/components/wizard/teams-step";
-import { isPresetLeague, seasonTitle, type LeagueRow, type TeamRow } from "@/lib/leagues";
+import { isPresetLeague, leagueNoun, seasonTitle, type LeagueRow, type TeamRow } from "@/lib/leagues";
 
 const STEPS = ["basics", "teams", "format", "review"] as const;
 export type WizardStep = (typeof STEPS)[number];
 const STEP_TITLES: Record<WizardStep, string> = {
-  basics: "League details",
+  basics: "Details",
   teams: "Teams",
   format: "Format",
   review: "Review",
@@ -77,6 +77,7 @@ export function LeagueWizard({
 
   const stepIndex = STEPS.indexOf(step);
   const isDraft = !league || league.status === "draft";
+  const noun = league ? leagueNoun(league) : "group";
 
   const go = (next: WizardStep) => {
     setError(null);
@@ -109,14 +110,14 @@ export function LeagueWizard({
   if (!league && kind === null) {
     return (
       <div className="flex flex-col gap-3">
-        <h1 className="mb-1 font-display text-3xl font-bold">Create a league</h1>
+        <h1 className="mb-1 font-display text-3xl font-bold">Create a group</h1>
         <StartChoice
-          title="Use a preset"
-          description="Pick a real competition. Teams and standings update automatically."
+          title="Play a real league"
+          description="Pick a real league. Teams and standings update automatically."
           onClick={() => setKind("preset")}
         />
         <StartChoice
-          title="Custom league"
+          title="Make your own"
           description="Set up your own teams, format and deadline, and keep the table yourself."
           onClick={() => setKind("custom")}
         />
@@ -134,7 +135,7 @@ export function LeagueWizard({
   if (!league && kind === "preset") {
     return (
       <div>
-        <h1 className="mb-4 font-display text-3xl font-bold">Choose a preset</h1>
+        <h1 className="mb-4 font-display text-3xl font-bold">Choose a league</h1>
         <PresetPicker presets={presets} onBack={() => setKind(null)} />
       </div>
     );
@@ -153,14 +154,14 @@ export function LeagueWizard({
     );
   }
 
-  // A preset league has nothing to set up beyond its name and privacy.
+  // A group on a real league has nothing to set up beyond its name and privacy.
   if (league && isPresetLeague(league)) {
     return (
       <div className="flex flex-col gap-4">
-        <h1 className="font-display text-3xl font-bold">League settings</h1>
+        <h1 className="font-display text-3xl font-bold">Group settings</h1>
         <p className="text-muted">
-          This league plays {seasonTitle(league)}, so its teams, deadline and standings come from
-          the official league.
+          This group plays {seasonTitle(league)}, so its teams, deadline and standings come from
+          the global league.
         </p>
         <BasicsStep
           league={league}
@@ -174,7 +175,7 @@ export function LeagueWizard({
           disabled={isPending}
           className="h-11 text-sm font-semibold text-relegation underline"
         >
-          Delete this league
+          Delete this group
         </button>
       </div>
     );
@@ -185,7 +186,9 @@ export function LeagueWizard({
       <p className="text-sm font-semibold text-muted">
         Step {stepIndex + 1} of {STEPS.length}
       </p>
-      <h1 className="mb-1 font-display text-3xl font-bold">{STEP_TITLES[step]}</h1>
+      <h1 className="mb-1 font-display text-3xl font-bold">
+        {step === "basics" ? `${noun === "group" ? "Group" : "League"} details` : STEP_TITLES[step]}
+      </h1>
       <div className="mb-5 flex gap-1" aria-hidden="true">
         {STEPS.map((name, index) => (
           <div
@@ -247,7 +250,7 @@ export function LeagueWizard({
             )}
             <dt className="text-muted">Teams</dt>
             <dd className="font-semibold">{teams.length}</dd>
-            <dt className="text-muted">Starts</dt>
+            <dt className="text-muted">Locks</dt>
             <dd className="font-semibold">
               <LocalTime iso={league.deadline} />
             </dd>
@@ -257,7 +260,7 @@ export function LeagueWizard({
           {isDraft ? (
             <StepActions
               onBack={() => go("format")}
-              primaryLabel={isPending ? "Publishing…" : "Publish league"}
+              primaryLabel={isPending ? "Publishing…" : `Publish ${noun}`}
               primaryDisabled={isPending}
               onPrimary={publish}
             />
@@ -284,7 +287,7 @@ export function LeagueWizard({
             disabled={isPending}
             className="h-11 text-sm font-semibold text-relegation underline"
           >
-            Delete this league
+            Delete this {noun}
           </button>
         </div>
       )}

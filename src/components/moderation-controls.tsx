@@ -49,21 +49,23 @@ export function LeagueModeration({
   leagueId,
   isHidden,
   isOfficial,
+  noun,
 }: {
   leagueId: string;
   isHidden: boolean;
   isOfficial: boolean;
+  noun: "league" | "group";
 }) {
   const { error, isPending, run, router } = useModeration();
 
   const toggle = () => {
-    if (!isHidden && !window.confirm("Hide this league? Its players won't be able to open it.")) return;
+    if (!isHidden && !window.confirm(`Hide this ${noun}? Its players won't be able to open it.`)) return;
     run(() => setLeagueHidden(leagueId, !isHidden));
   };
   const remove = () => {
     const warning = isOfficial
       ? "Permanently delete this official league, its season and all predictions? This can't be undone."
-      : "Permanently delete this league? This can't be undone.";
+      : `Permanently delete this ${noun}? This can't be undone.`;
     if (!window.confirm(warning)) return;
     run(
       () => deleteLeague(leagueId),
@@ -76,10 +78,10 @@ export function LeagueModeration({
       <h2 className="mb-2 text-sm font-semibold text-muted">Admin controls</h2>
       <div className="grid grid-cols-2 gap-2">
         <button type="button" onClick={toggle} disabled={isPending} className={buttonClass}>
-          {isHidden ? "Unhide league" : "Hide league"}
+          {isHidden ? `Unhide ${noun}` : `Hide ${noun}`}
         </button>
         <button type="button" onClick={remove} disabled={isPending} className={`${buttonClass} text-relegation`}>
-          Delete league
+          Delete {noun}
         </button>
       </div>
       <ErrorLine error={error} />
@@ -88,11 +90,19 @@ export function LeagueModeration({
 }
 
 // In the review queue, for all the open reports on one league.
-export function ReportActions({ leagueId, reportCount }: { leagueId: string; reportCount: number }) {
+export function ReportActions({
+  leagueId,
+  reportCount,
+  noun,
+}: {
+  leagueId: string;
+  reportCount: number;
+  noun: "league" | "group";
+}) {
   const { error, isPending, run } = useModeration();
 
   const hide = () => {
-    if (!window.confirm("Hide this league? Its players won't be able to open it.")) return;
+    if (!window.confirm(`Hide this ${noun}? Its players won't be able to open it.`)) return;
     run(() => resolveReports(leagueId, true));
   };
 
@@ -110,7 +120,7 @@ export function ReportActions({ leagueId, reportCount }: { leagueId: string; rep
           </button>
         )}
         <button type="button" onClick={hide} disabled={isPending} className={`${buttonClass} text-relegation`}>
-          Hide league
+          Hide {noun}
         </button>
       </div>
       <ErrorLine error={error} />

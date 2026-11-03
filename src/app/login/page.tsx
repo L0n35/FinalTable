@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { LegalLinks } from "@/components/legal-links";
+import { SiteFooter } from "@/components/legal-links";
 import { LoginCard } from "@/components/login-card";
 
 export const metadata: Metadata = { title: "Sign in | Final Table" };
@@ -17,7 +17,7 @@ export default function LoginPage() {
         <LoginCard />
       </Suspense>
       <p className="mt-4 text-center text-sm text-muted">By continuing, you agree to the terms and privacy notice.</p>
-      <LegalLinks />
+      <SiteFooter />
     </main>
   );
 }

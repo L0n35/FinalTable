@@ -47,8 +47,8 @@ export async function YourLeagues() {
   };
 
   return (
-    <section aria-label="Your leagues" className="mt-4">
-      <h2 className="mb-2 font-display text-xl font-bold">Your leagues</h2>
+    <section aria-label="Your leagues and groups" className="mt-4">
+      <h2 className="mb-2 font-display text-xl font-bold">Your leagues and groups</h2>
       <ul className="flex flex-col gap-2">
         {leagues.map((league) => {
           const status = statusOf(league);

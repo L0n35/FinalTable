@@ -7,15 +7,15 @@ import { JoinCodeForm } from "@/components/join-code-form";
 import { LocalTime } from "@/components/local-time";
 import { PageFallback, PageShell } from "@/components/page-shell";
 import { getSession } from "@/lib/auth";
-import { isLocked } from "@/lib/leagues";
+import { isLocked, leagueNoun, type LeagueType } from "@/lib/leagues";
 
-export const metadata: Metadata = { title: "Join a league | Final Table" };
+export const metadata: Metadata = { title: "Join a group | Final Table" };
 
 type Preview = {
   id: string;
   slug: string;
   name: string;
-  type: string;
+  type: LeagueType;
   sport: string | null;
   team_count: number;
   deadline: string;
@@ -38,7 +38,7 @@ async function Join({
   if (!preview) {
     return (
       <div className="flex flex-col gap-3">
-        <h1 className="font-display text-3xl font-bold">We can&apos;t find that league</h1>
+        <h1 className="font-display text-3xl font-bold">We can&apos;t find that group</h1>
         <p className="text-muted">
           The code may be mistyped, or it may have been replaced. Check with whoever invited you.
         </p>
@@ -91,7 +91,7 @@ async function Join({
           leagueId={preview.id}
           slug={preview.slug}
           joinCode={code}
-          label={started ? "Follow this league" : "Join this league"}
+          label={started ? `Follow this ${leagueNoun(preview)}` : `Join this ${leagueNoun(preview)}`}
           autoJoin={join === "1"}
         />
       ) : (

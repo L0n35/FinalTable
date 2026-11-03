@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { SiteFooter } from "@/components/legal-links";
 
 export function PageShell({ children }: { children: ReactNode }) {
   return (
@@ -10,6 +11,9 @@ export function PageShell({ children }: { children: ReactNode }) {
         </Link>
       </header>
       <main>{children}</main>
+      <div className="mt-8">
+        <SiteFooter />
+      </div>
     </div>
   );
 }

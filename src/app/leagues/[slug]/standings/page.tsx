@@ -58,7 +58,7 @@ async function Standings({ params }: { params: Promise<{ slug: string }> }) {
       saved={(latest?.team_order as string[] | undefined) ?? null}
       note={
         league.competition_id
-          ? "Saving updates scores straight away in every league playing this season."
+          ? "Saving updates scores straight away in every league and group playing this season."
           : "Saving updates everyone's scores straight away."
       }
     />

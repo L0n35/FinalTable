@@ -6,9 +6,9 @@ import { PageFallback, PageShell } from "@/components/page-shell";
 import type { WizardStep } from "@/components/wizard/league-wizard";
 import { WizardLoader } from "@/components/wizard/wizard-loader";
 import { getSession, isCurrentUserAdmin } from "@/lib/auth";
-import { isLocked, LEAGUE_COLUMNS, TEAM_COLUMNS, type LeagueRow, type TeamRow } from "@/lib/leagues";
+import { isLocked, LEAGUE_COLUMNS, leagueNoun, TEAM_COLUMNS, type LeagueRow, type TeamRow } from "@/lib/leagues";
 
-export const metadata: Metadata = { title: "League setup | Final Table" };
+export const metadata: Metadata = { title: "Setup | Final Table" };
 
 const WIZARD_STEPS: WizardStep[] = ["basics", "teams", "format", "review"];
 
@@ -41,12 +41,13 @@ async function Setup({
   if (league.created_by !== userId && !isAdmin) notFound();
 
   if (isLocked(league) || league.status === "finished") {
+    const noun = leagueNoun(league);
     return (
       <div>
         <h1 className="font-display text-3xl font-bold">{league.name} has started</h1>
-        <p className="mt-1 mb-4 text-muted">A league&apos;s setup is locked once it starts.</p>
+        <p className="mt-1 mb-4 text-muted">Setup is locked once a {noun} starts.</p>
         <Link href={`/leagues/${league.slug}`} className="font-semibold underline">
-          Back to the league
+          Back to the {noun}
         </Link>
       </div>
     );

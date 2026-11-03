@@ -14,7 +14,7 @@
 
 - Ads, payments, paid entry and prizes
 - Playoff winner or bracket predictions
-- Conferences and groups (one league has one table)
+- Conferences (one league has one table, so NBA and MLS are each two leagues, East and West)
 - Automatic results from a sports API
 - Email or Apple login
 - Email reminders (see section 13)
@@ -40,6 +40,8 @@ Sport: Football
 
 A **season** is the thing being predicted. A **league** is a group of people playing a season, with a name, a privacy setting and members. A custom league gets its own hidden season, which users never see, so every league works the same way.
 
+**On screen,** official leagues are called **global leagues**, because "official" beside a real league's name would read as if that league endorses them. Leagues people create are called **groups**. Database names and `/leagues/` URLs keep the word "league".
+
 | Type | Created by | Listed on Explore | How to join |
 |---|---|---|---|
 | Official | Any admin. Belongs to the site, with no owner | Yes, Official tab | Anyone signed in |
@@ -61,6 +63,10 @@ Public and private leagues can be **custom**, with their own teams and table, or
 - Every published official season is automatically available as a preset until its deadline. After that it disappears from the preset list.
 - A new season can copy teams, logos and zones from the previous one, ready for the admin to swap promoted and relegated teams.
 - A preset league's creator chooses only its name and privacy. Teams, zones, deadline and standings come from the official season, so an admin's update reaches every league on that season immediately.
+
+### Guest players
+
+An admin can add someone's table for them, using the SQL Editor only. A guest is a profile with no login, shown under a short name such as "Alex P.". They rank and score like anyone else, but nobody can sign in as them. This is how the friends' Premier League 2026-27 tables were backfilled, and it's the one exception to predictions being written before the deadline. The app has no path for it, so that rule still holds for everything the app does. Guest data goes in `supabase/private/`, which is git-ignored.
 
 ### One prediction per season
 
@@ -220,14 +226,15 @@ Sources disagree on the right `touch-action` setting. The plan is `touch-action:
 ### Data model
 
 ```text
-profiles            id, display_name, avatar_url, is_admin
+profiles            id, display_name, avatar_url, is_admin, is_guest
 sports              id, name
-competitions        id, sport_id, name
+competitions        id, sport_id, name, accent, sort_order, opens_note
 seasons             id, competition_id, label, sport_label, team_count, deadline,
                     promotion_count, playoff_from, playoff_to, relegation_count,
+                    promotion_label, playoff_label, relegation_label,
                     status (draft | published | finished), finished_at
 leagues             id, slug, join_code, type, name, season_id, created_by, hidden_at
-teams               id, season_id, name, logo_path, colour_primary, colour_secondary
+teams               id, season_id, name, short_name, logo_path, colour_primary, colour_secondary
 memberships         league_id, user_id, role (player | spectator), joined_at
 predictions         id, season_id, user_id, team_order (uuid[]), needs_review, submitted_at
 standings_updates   id, season_id, version, team_order (uuid[]), updated_by, created_at

@@ -4,19 +4,21 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CalendarLinks } from "@/components/calendar-links";
 import { JoinButton } from "@/components/join-button";
-import { LeagueTable } from "@/components/league-table";
 import { LiveSeason, readLiveView } from "@/components/live-season";
 import { LocalTime } from "@/components/local-time";
 import { LeagueModeration } from "@/components/moderation-controls";
 import { PageFallback, PageShell } from "@/components/page-shell";
 import { ReportButton } from "@/components/report-button";
+import { ScoringNote } from "@/components/scoring-note";
 import { SharePanel } from "@/components/share-panel";
-import { ZoneLegend } from "@/components/zone-legend";
+import { TeamGrid } from "@/components/team-grid";
 import { getSession, isCurrentUserAdmin } from "@/lib/auth";
 import {
   isLocked,
   isPresetLeague,
   LEAGUE_COLUMNS,
+  LEAGUE_TYPE_LABELS,
+  leagueNoun,
   seasonTitle,
   TEAM_COLUMNS,
   toTeam,
@@ -24,10 +26,9 @@ import {
   type LeagueRow,
   type TeamRow,
 } from "@/lib/leagues";
+import { describeZones } from "@/lib/zones";
 
 export const metadata: Metadata = { title: "League | Final Table" };
-
-const TYPE_LABELS = { official: "Official league", public: "Public league", private: "Private league" };
 
 async function League({
   params,
@@ -85,12 +86,13 @@ async function League({
   const ownOrder = prediction && !prediction.needs_review ? prediction.team_order : null;
   const title = seasonTitle(league);
   const isHidden = league.hidden_at !== null;
+  const noun = leagueNoun(league);
 
   return (
     <div className="flex flex-col gap-5">
       <div>
         <p className="text-sm font-semibold text-muted">
-          {TYPE_LABELS[league.type]}
+          {LEAGUE_TYPE_LABELS[league.type]}
           {league.sport ? ` · ${league.sport}` : ""}
           {isDraft ? " · Draft" : league.status === "finished" ? " · Finished" : isLive ? " · Live" : ""}
         </p>
@@ -104,7 +106,7 @@ async function League({
 
       {isHidden && (
         <p role="status" className="rounded-lg border border-relegation bg-surface p-3">
-          This league has been hidden by an admin while it&apos;s reviewed. Its players can&apos;t open it, and
+          This {noun} has been hidden by an admin while it&apos;s reviewed. Its players can&apos;t open it, and
           nobody new can join.
         </p>
       )}
@@ -127,7 +129,7 @@ async function League({
         <JoinButton
           leagueId={league.id}
           slug={league.slug}
-          label={locked && !prediction ? "Follow this league" : "Join this league"}
+          label={locked && !prediction ? `Follow this ${noun}` : `Join this ${noun}`}
         />
       ) : role === "player" && !locked ? (
         <Link
@@ -143,8 +145,8 @@ async function League({
       ) : role === "spectator" || !ownOrder ? (
         <p className="rounded-lg border border-line bg-surface p-3">
           {role === "spectator"
-            ? "You're following this league as a spectator."
-            : "This league has started, and you didn't get a prediction in."}
+            ? `You're following this ${noun} as a spectator.`
+            : `This ${noun} has started, and you didn't get a prediction in.`}
         </p>
       ) : null}
 
@@ -158,8 +160,8 @@ async function League({
 
       {title && role === "player" && prediction && !locked && (
         <p className="text-sm text-muted">
-          You have one table for {title}, and it counts in every league you&apos;re in for that
-          season.
+          You have one table for {title}, and it counts in every league and group you&apos;re in for
+          that season.
         </p>
       )}
 
@@ -189,7 +191,7 @@ async function League({
           href={`/leagues/${league.id}/setup?step=${isPreset ? "basics" : "teams"}`}
           className="flex h-12 items-center justify-center rounded-lg border border-line font-semibold"
         >
-          {isPreset ? "League settings" : "Edit league"}
+          {isPreset ? "Group settings" : `Edit ${noun}`}
         </Link>
       )}
 
@@ -198,21 +200,27 @@ async function League({
           <h2 className="mb-2 font-display text-xl font-bold">{teams.length} teams</h2>
           {isPreset && (
             <p className="mb-2 text-sm text-muted">
-              Teams and standings update automatically from the official league.
+              Teams and standings come from the global league, so they update automatically.
             </p>
           )}
-          <ZoneLegend zones={zonesOf(league)} total={teams.length} />
-          <LeagueTable teams={teams} zones={zonesOf(league)} />
+          {describeZones(zonesOf(league)).length > 0 && (
+            <p className="mb-2 text-sm text-muted">{describeZones(zonesOf(league)).join(" · ")}</p>
+          )}
+          <TeamGrid teams={teams} />
+          <div className="mt-2">
+            <ScoringNote league={league} />
+          </div>
         </section>
       )}
 
       {isAdmin && !isDraft && (
-        <LeagueModeration leagueId={league.id} isHidden={isHidden} isOfficial={isOfficial} />
+        <LeagueModeration leagueId={league.id} isHidden={isHidden} isOfficial={isOfficial} noun={noun} />
       )}
 
       {userId && !isDraft && !isCreator && !isHidden && (
         <ReportButton
           leagueId={league.id}
+          noun={noun}
           logoTeams={teamRows
             .filter((team) => team.logo_path)
             .map((team) => ({ id: team.id, name: team.name }))

@@ -95,7 +95,7 @@ export function AccountSettings({ initialName }: { initialName: string }) {
       <Sheet open={confirming} label="Delete your account?" onClose={() => setConfirming(false)}>
         <h2 className="font-display text-2xl font-bold">Delete your account?</h2>
         <p className="mt-1 text-muted">
-          This can&apos;t be undone. Leagues nobody else is in are deleted. Leagues with other people carry on and pass to
+          This can&apos;t be undone. Groups nobody else is in are deleted. Groups with other people carry on and pass to
           their longest-standing member.
         </p>
         {deleteError && (
