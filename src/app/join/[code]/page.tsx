@@ -5,11 +5,12 @@ import { redirect } from "next/navigation";
 import { JoinButton } from "@/components/join-button";
 import { JoinCodeForm } from "@/components/join-code-form";
 import { LocalTime } from "@/components/local-time";
-import { PageFallback, PageShell } from "@/components/page-shell";
+import { PageFallback } from "@/components/page-fallback";
+import { PageShell } from "@/components/page-shell";
 import { getSession } from "@/lib/auth";
 import { isLocked, leagueNoun, type LeagueType } from "@/lib/leagues";
 
-export const metadata: Metadata = { title: "Join a group | Final Table" };
+export const metadata: Metadata = { title: "Join a group | Final Table", robots: { index: false } };
 
 type Preview = {
   id: string;

@@ -17,6 +17,15 @@ export default function PrivacyPage() {
       <LegalSection title="Who can see it">
         <p>Your email address is never shown to other players.</p>
         <p>
+          Anyone can browse the home and Explore pages without an account. They list global leagues and public groups,
+          with player counts and the display name of whoever is leading a global league.
+        </p>
+        <p>
+          They can also show crowd figures, such as the share of players who picked a team to finish top. These are
+          rounded totals across everyone with a table for that season, including players in private groups, and they
+          never show who picked what.
+        </p>
+        <p>
           Your display name appears to people in your leagues and groups, and on the leaderboards of global leagues and
           public groups, including to people who aren&apos;t signed in.
         </p>

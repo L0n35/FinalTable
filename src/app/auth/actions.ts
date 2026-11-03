@@ -1,16 +1,15 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { refresh, updateTag } from "next/cache";
+import { DIRECTORY_TAG } from "@/lib/directory";
 import { createClient } from "@/lib/supabase/server";
 
 type Outcome = { ok: true } | { ok: false; error: string };
 
+// The caller reloads the page afterwards, so nothing private stays in memory.
 export async function signOut() {
   const supabase = await createClient();
   await supabase.auth.signOut();
-  revalidatePath("/", "layout");
-  redirect("/");
 }
 
 export async function updateDisplayName(name: string): Promise<Outcome> {
@@ -26,11 +25,12 @@ export async function updateDisplayName(name: string): Promise<Outcome> {
     console.error("Renaming failed:", error.message);
     return { ok: false, error: "Something went wrong. Please try again." };
   }
-  revalidatePath("/", "layout");
+  refresh();
   return { ok: true };
 }
 
-export async function deleteAccount(): Promise<Outcome | undefined> {
+// As with signOut, the caller reloads the page afterwards.
+export async function deleteAccount(): Promise<Outcome> {
   const supabase = await createClient();
   const { error } = await supabase.rpc("delete_own_account");
   if (error) {
@@ -39,6 +39,7 @@ export async function deleteAccount(): Promise<Outcome | undefined> {
   }
   // Local only, because the session no longer exists on the server.
   await supabase.auth.signOut({ scope: "local" });
-  revalidatePath("/", "layout");
-  redirect("/");
+  // Their name could be on a cached card as a league's leader, so it mustn't wait for the cache.
+  updateTag(DIRECTORY_TAG);
+  return { ok: true };
 }

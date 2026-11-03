@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { cache, Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -7,13 +7,15 @@ import { JoinButton } from "@/components/join-button";
 import { LiveSeason, readLiveView } from "@/components/live-season";
 import { LocalTime } from "@/components/local-time";
 import { LeagueModeration } from "@/components/moderation-controls";
-import { PageFallback, PageShell } from "@/components/page-shell";
+import { PageFallback } from "@/components/page-fallback";
+import { PageShell } from "@/components/page-shell";
 import { ReportButton } from "@/components/report-button";
 import { ScoringNote } from "@/components/scoring-note";
 import { SharePanel } from "@/components/share-panel";
 import { TeamGrid } from "@/components/team-grid";
 import { getSession, isCurrentUserAdmin } from "@/lib/auth";
 import {
+  accentStyle,
   isLocked,
   isPresetLeague,
   LEAGUE_COLUMNS,
@@ -28,7 +30,22 @@ import {
 } from "@/lib/leagues";
 import { describeZones } from "@/lib/zones";
 
-export const metadata: Metadata = { title: "League | Final Table" };
+// Shared by the page and its metadata, so they make one read between them.
+const readLeague = cache(async (slug: string) => {
+  const { supabase } = await getSession();
+  const { data } = await supabase.from("league_details").select(LEAGUE_COLUMNS).eq("slug", slug).maybeSingle();
+  return data as unknown as LeagueRow | null;
+});
+
+export async function generateMetadata({ params }: PageProps<"/leagues/[slug]">): Promise<Metadata> {
+  const { slug } = await params;
+  const league = await readLeague(slug);
+  return {
+    title: `${league?.name ?? "League"} | Final Table`,
+    // Only global leagues belong in search results. Groups are players' own.
+    ...(league?.type === "official" ? {} : { robots: { index: false } }),
+  };
+}
 
 async function League({
   params,
@@ -41,12 +58,7 @@ async function League({
   const session = await getSession();
   const { supabase, userId } = session;
 
-  const { data } = await supabase
-    .from("league_details")
-    .select(LEAGUE_COLUMNS)
-    .eq("slug", slug)
-    .maybeSingle();
-  const league = data as unknown as LeagueRow | null;
+  const league = await readLeague(slug);
   if (!league) notFound();
 
   const [{ data: teamRowsData }, membership, ownPrediction, isAdmin] = await Promise.all([
@@ -90,15 +102,15 @@ async function League({
 
   return (
     <div className="flex flex-col gap-5">
-      <div>
-        <p className="text-sm font-semibold text-muted">
+      <div style={accentStyle(league.competition_accent)} className="league-header rounded-2xl border border-white/10 p-4">
+        <p className="text-sm font-semibold text-white/85">
           {LEAGUE_TYPE_LABELS[league.type]}
           {league.sport ? ` · ${league.sport}` : ""}
           {isDraft ? " · Draft" : league.status === "finished" ? " · Finished" : isLive ? " · Live" : ""}
         </p>
         <h1 className="font-display text-4xl font-bold break-words">{league.name}</h1>
-        {isPreset && <p className="text-muted">Playing {title}</p>}
-        <p className="mt-1 text-muted">
+        {isPreset && <p className="text-white/85">Playing {title}</p>}
+        <p className="mt-1 text-white/85">
           {locked ? "Started " : "Predictions lock "}
           <LocalTime iso={league.deadline} />
         </p>
@@ -183,6 +195,7 @@ async function League({
           leagueName={league.name}
           joinCode={league.join_code}
           canRotate={canManage && !isOfficial}
+          closed={locked}
         />
       )}
 

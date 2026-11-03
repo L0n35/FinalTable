@@ -53,6 +53,12 @@ After the migrations, run [supabase/seed/launch-leagues.sql](supabase/seed/launc
 
 Anything in `supabase/private/` is git-ignored because it holds personal data, so it must never be committed.
 
+## Cached pages
+
+The home and Explore pages read the database when the site is built, so run new migrations before deploying. If those reads fail, the build fails and the live site stays as it was, rather than publishing an empty page.
+
+After that they refresh at most every 15 minutes. Publishing, hiding, deleting, renaming or finishing a league refreshes them straight away. Joining and predicting don't, because that would clear the cache on every prediction. Reading new shared data on those pages means adding it in [src/lib/directory.ts](src/lib/directory.ts).
+
 ## Backups
 
 [.github/workflows/backup.yml](.github/workflows/backup.yml) saves an encrypted copy of the database every night and keeps it for 14 days. Logo files aren't included. To turn it on, add two secrets under **GitHub > Settings > Secrets and variables > Actions**:

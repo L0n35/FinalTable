@@ -1,6 +1,7 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { refresh, updateTag } from "next/cache";
+import { DIRECTORY_TAG } from "@/lib/directory";
 import {
   LEAGUE_COLUMNS,
   TEAM_COLUMNS,
@@ -79,6 +80,10 @@ function failure(error: { message?: string } | null): Failure {
   return { ok: false, error: "Something went wrong. Please try again." };
 }
 
+// Home and Explore are cached for everyone, so only a change to what they list clears them. Anything
+// else, such as joining or predicting, just refreshes the player's own screen.
+const refreshListings = () => updateTag(DIRECTORY_TAG);
+
 async function readLeague(supabase: Awaited<ReturnType<typeof createClient>>, leagueId: string) {
   const { data, error } = await supabase
     .from("league_details")
@@ -108,7 +113,7 @@ export async function createCustomLeague(input: CustomLeagueInput): Promise<Resu
     p_deadline: input.deadline,
   });
   if (error) return failure(error);
-  revalidatePath("/", "layout");
+  refresh();
   return { ok: true, id: data as string };
 }
 
@@ -126,7 +131,8 @@ export async function createPresetLeague(
   if (error) return failure(error);
   const { league, error: readError } = await readLeague(supabase, data as string);
   if (readError || !league) return failure(readError);
-  revalidatePath("/", "layout");
+  if (type === "public") refreshListings();
+  else refresh();
   return { ok: true, slug: league.slug };
 }
 
@@ -141,7 +147,7 @@ export async function createOfficialSeason(input: OfficialSeasonInput): Promise<
     p_copy_from: input.copyFrom,
   });
   if (error) return failure(error);
-  revalidatePath("/", "layout");
+  refresh();
   return { ok: true, id: data as string };
 }
 
@@ -160,7 +166,7 @@ export async function updateBasics(
   if (error) return failure(error);
   const { league, error: readError } = await readLeague(supabase, leagueId);
   if (readError || !league) return failure(readError);
-  revalidatePath("/", "layout");
+  refreshListings();
   return { ok: true, league };
 }
 
@@ -179,7 +185,7 @@ export async function saveFormat(
   if (error) return failure(error);
   const { league: saved, error: readError } = await readLeague(supabase, league.id);
   if (readError || !saved) return failure(readError);
-  revalidatePath("/", "layout");
+  refresh();
   return { ok: true, league: saved };
 }
 
@@ -216,7 +222,8 @@ export async function saveTeams(
   ]);
   if (readError || !saved) return failure(readError);
   if (teamsResult.error) return failure(teamsResult.error);
-  revalidatePath("/", "layout");
+  if (saved.type === "official") refreshListings();
+  else refresh();
   return { ok: true, league: saved, teams: teamsResult.data as TeamRow[] };
 }
 
@@ -226,7 +233,7 @@ export async function publishSeason(
   const supabase = await createClient();
   const { error } = await supabase.rpc("publish_season", { p_season_id: league.season_id });
   if (error) return failure(error);
-  revalidatePath("/", "layout");
+  refreshListings();
   return { ok: true };
 }
 
@@ -242,7 +249,7 @@ export async function deleteLeague(leagueId: string): Promise<Result<object>> {
     supabase,
     (before ?? []).map((row) => row.logo_path as string | null).filter((path): path is string => Boolean(path)),
   );
-  revalidatePath("/", "layout");
+  refreshListings();
   return { ok: true };
 }
 
@@ -269,7 +276,7 @@ export async function joinLeague(
         .maybeSingle()
     : { data: null };
 
-  revalidatePath("/", "layout");
+  refresh();
   return { ok: true, role: data as string, hasPrediction: Boolean(prediction) };
 }
 
@@ -285,7 +292,7 @@ export async function submitPrediction(
   if (error) {
     return { ...failure(error), closed: error.message.includes("deadline_passed") };
   }
-  revalidatePath("/", "layout");
+  refresh();
   return { ok: true };
 }
 
@@ -293,7 +300,7 @@ export async function rotateJoinCode(leagueId: string): Promise<Result<{ code: s
   const supabase = await createClient();
   const { data, error } = await supabase.rpc("rotate_join_code", { p_league_id: leagueId });
   if (error) return failure(error);
-  revalidatePath("/", "layout");
+  refresh();
   return { ok: true, code: data as string };
 }
 
@@ -304,7 +311,7 @@ export async function updateStandings(seasonId: string, order: string[]): Promis
     p_team_order: order,
   });
   if (error) return failure(error);
-  revalidatePath("/", "layout");
+  refreshListings();
   return { ok: true };
 }
 
@@ -312,7 +319,7 @@ export async function finishSeason(seasonId: string): Promise<Result<object>> {
   const supabase = await createClient();
   const { error } = await supabase.rpc("finish_season", { p_season_id: seasonId });
   if (error) return failure(error);
-  revalidatePath("/", "layout");
+  refreshListings();
   return { ok: true };
 }
 
@@ -320,7 +327,7 @@ export async function reopenSeason(seasonId: string): Promise<Result<object>> {
   const supabase = await createClient();
   const { error } = await supabase.rpc("reopen_season", { p_season_id: seasonId });
   if (error) return failure(error);
-  revalidatePath("/", "layout");
+  refreshListings();
   return { ok: true };
 }
 
@@ -341,7 +348,7 @@ export async function dismissReport(reportId: string): Promise<Result<object>> {
   const supabase = await createClient();
   const { error } = await supabase.rpc("dismiss_report", { p_report_id: reportId });
   if (error) return failure(error);
-  revalidatePath("/", "layout");
+  refresh();
   return { ok: true };
 }
 
@@ -349,7 +356,8 @@ export async function resolveReports(leagueId: string, hide: boolean): Promise<R
   const supabase = await createClient();
   const { error } = await supabase.rpc("resolve_league_reports", { p_league_id: leagueId, p_hide: hide });
   if (error) return failure(error);
-  revalidatePath("/", "layout");
+  if (hide) refreshListings();
+  else refresh();
   return { ok: true };
 }
 
@@ -357,7 +365,7 @@ export async function setLeagueHidden(leagueId: string, hidden: boolean): Promis
   const supabase = await createClient();
   const { error } = await supabase.rpc("set_league_hidden", { p_league_id: leagueId, p_hidden: hidden });
   if (error) return failure(error);
-  revalidatePath("/", "layout");
+  refreshListings();
   return { ok: true };
 }
 
@@ -366,6 +374,6 @@ export async function removeTeamLogo(teamId: string): Promise<Result<object>> {
   const { data, error } = await supabase.rpc("remove_team_logo", { p_team_id: teamId });
   if (error) return failure(error);
   await removeUnusedLogos(supabase, data ? [data as string] : []);
-  revalidatePath("/", "layout");
+  refreshListings();
   return { ok: true };
 }

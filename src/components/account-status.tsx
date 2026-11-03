@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { signOut } from "@/app/auth/actions";
+import { SignOutButton } from "@/components/sign-out-button";
 import { getSession, isCurrentUserAdmin } from "@/lib/auth";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
 
@@ -9,16 +9,7 @@ export async function AccountStatus() {
   const session = await getSession();
   const { supabase, userId } = session;
 
-  if (!userId) {
-    return (
-      <Link
-        href="/login"
-        className="flex h-13 items-center justify-center rounded-lg border border-line font-semibold"
-      >
-        Sign in
-      </Link>
-    );
-  }
+  if (!userId) return null;
 
   const [{ data: profile }, isAdmin] = await Promise.all([
     supabase.from("profiles").select("display_name").eq("id", userId).maybeSingle(),
@@ -40,11 +31,7 @@ export async function AccountStatus() {
           <span className="text-muted">Signed in as </span>
           <span className="font-semibold underline">{profile?.display_name ?? "Player"}</span>
         </Link>
-        <form action={signOut}>
-          <button type="submit" className="h-11 shrink-0 rounded-lg border border-line px-4 font-semibold">
-            Sign out
-          </button>
-        </form>
+        <SignOutButton />
       </div>
     </>
   );

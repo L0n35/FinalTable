@@ -11,11 +11,14 @@ export function SharePanel({
   leagueName,
   joinCode,
   canRotate,
+  closed = false,
 }: {
   leagueId: string;
   leagueName: string;
   joinCode: string;
   canRotate: boolean;
+  // Predictions have locked, so anyone invited now can only follow along.
+  closed?: boolean;
 }) {
   const [code, setCode] = useState(joinCode);
   const [notice, setNotice] = useState<string | null>(null);
@@ -26,6 +29,7 @@ export function SharePanel({
     () => "",
   );
   const link = `${origin}/join/${code}`;
+  const heading = closed ? "Invite friends" : "Invite players";
 
   const share = async () => {
     setNotice(null);
@@ -56,8 +60,9 @@ export function SharePanel({
   };
 
   return (
-    <section aria-label="Invite players" className="rounded-lg border border-line bg-surface p-4">
-      <h2 className="font-display text-xl font-bold">Invite players</h2>
+    <section aria-label={heading} className="rounded-lg border border-line bg-surface p-4">
+      <h2 className="font-display text-xl font-bold">{heading}</h2>
+      {closed && <p className="text-sm text-muted">Predictions have closed, but they can still follow along.</p>}
       <p className="mt-2 text-sm text-muted">Join code</p>
       <p className="font-display text-3xl font-bold tracking-widest" data-testid="join-code">
         {code}

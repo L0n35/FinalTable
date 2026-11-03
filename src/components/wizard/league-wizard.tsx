@@ -56,6 +56,7 @@ export function LeagueWizard({
   isAdmin,
   initialStep,
   presets = [],
+  comingSoon = [],
   officialSeasons = [],
   initialKind = null,
 }: {
@@ -64,6 +65,7 @@ export function LeagueWizard({
   isAdmin: boolean;
   initialStep: WizardStep;
   presets?: Preset[];
+  comingSoon?: string[];
   officialSeasons?: ExistingSeason[];
   initialKind?: StartKind | null;
 }) {
@@ -136,7 +138,7 @@ export function LeagueWizard({
     return (
       <div>
         <h1 className="mb-4 font-display text-3xl font-bold">Choose a league</h1>
-        <PresetPicker presets={presets} onBack={() => setKind(null)} />
+        <PresetPicker presets={presets} comingSoon={comingSoon} onBack={() => setKind(null)} />
       </div>
     );
   }

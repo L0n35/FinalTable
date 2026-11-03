@@ -39,9 +39,9 @@ export function AccountSettings({ initialName }: { initialName: string }) {
   const remove = () => {
     setDeleteError(null);
     startDeleting(async () => {
-      // On success this redirects home, so only a failure comes back.
       const result = await deleteAccount().catch(() => ({ ok: false as const, error: OFFLINE }));
-      if (result && !result.ok) setDeleteError(result.error);
+      if (result.ok) window.location.replace("/");
+      else setDeleteError(result.error);
     });
   };
 

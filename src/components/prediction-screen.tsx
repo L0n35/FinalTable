@@ -10,6 +10,7 @@ import { TeamBadge } from "@/components/team-badge";
 import { ZoneLegend } from "@/components/zone-legend";
 import { copyText } from "@/lib/browser-utils";
 import type { League } from "@/lib/demo-league";
+import { timeLeft } from "@/lib/leagues";
 import {
   clearSavedOrder,
   isSavedOrderOlderThan,
@@ -18,15 +19,6 @@ import {
   writeSavedOrder,
 } from "@/lib/saved-order";
 import { buzz, sameOrder, useRanking } from "@/lib/use-ranking";
-
-function timeLeft(deadline: number, now: number) {
-  const minutes = Math.max(0, Math.floor((deadline - now) / 60_000));
-  const days = Math.floor(minutes / 1440);
-  const hours = Math.floor((minutes % 1440) / 60);
-  if (days > 0) return `${days}d ${hours}h left`;
-  if (hours > 0) return `${hours}h ${minutes % 60}m left`;
-  return `${minutes}m left`;
-}
 
 export type SavePrediction = (
   leagueId: string,

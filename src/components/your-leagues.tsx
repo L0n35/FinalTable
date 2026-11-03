@@ -2,7 +2,7 @@ import Link from "next/link";
 import { LocalTime } from "@/components/local-time";
 import { getSession } from "@/lib/auth";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
-import { isLocked, LEAGUE_COLUMNS, type LeagueRow } from "@/lib/leagues";
+import { accentStyle, isLocked, LEAGUE_COLUMNS, type LeagueRow } from "@/lib/leagues";
 
 export async function YourLeagues() {
   if (!isSupabaseConfigured) return null;
@@ -46,17 +46,26 @@ export async function YourLeagues() {
       : { label: "Submitted", urgent: false };
   };
 
+  // Anything needing action first and finished seasons last. The sort keeps deadline order within each.
+  const priority = (league: LeagueRow) => {
+    const status = statusOf(league);
+    if (status?.urgent) return 0;
+    return status?.label === "Finished" ? 2 : 1;
+  };
+  const ordered = [...leagues].sort((a, b) => priority(a) - priority(b));
+
   return (
-    <section aria-label="Your leagues and groups" className="mt-4">
-      <h2 className="mb-2 font-display text-xl font-bold">Your leagues and groups</h2>
-      <ul className="flex flex-col gap-2">
-        {leagues.map((league) => {
+    <section aria-label="Your leagues and groups">
+      <h2 className="mb-3 font-display text-3xl font-bold">Your leagues and groups</h2>
+      <ul className="grid gap-2 md:grid-cols-2">
+        {ordered.map((league) => {
           const status = statusOf(league);
           return (
             <li key={league.id}>
               <Link
                 href={`/leagues/${league.slug}`}
-                className="block rounded-lg border border-line bg-surface p-3"
+                style={accentStyle(league.competition_accent)}
+                className="group-row block rounded-xl border border-line py-3 pr-3 pl-4"
               >
                 <span className="flex items-baseline justify-between gap-3">
                   <span className="truncate font-semibold">{league.name}</span>

@@ -1,9 +1,12 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { PageFallback, PageShell } from "@/components/page-shell";
+import { PageFallback } from "@/components/page-fallback";
+import { PageShell } from "@/components/page-shell";
 import { WizardLoader } from "@/components/wizard/wizard-loader";
 import { getSession, isCurrentUserAdmin } from "@/lib/auth";
+import { readDirectory } from "@/lib/directory";
+import { splitDirectory } from "@/lib/directory-rows";
 import { isLocked, LEAGUE_COLUMNS, type LeagueRow } from "@/lib/leagues";
 
 export const metadata: Metadata = { title: "Create a group | Final Table" };
@@ -13,9 +16,10 @@ async function NewLeague({ searchParams }: { searchParams: Promise<{ kind?: stri
   const session = await getSession();
   if (!session.userId) redirect("/login?next=/leagues/new");
 
-  const [isAdmin, { data }] = await Promise.all([
+  const [isAdmin, { data }, directory] = await Promise.all([
     isCurrentUserAdmin(session),
     session.supabase.from("league_details").select(LEAGUE_COLUMNS).eq("type", "official"),
+    readDirectory(),
   ]);
   const official = (data ?? []) as unknown as LeagueRow[];
   const presets = official.filter(
@@ -29,6 +33,7 @@ async function NewLeague({ searchParams }: { searchParams: Promise<{ kind?: stri
       isAdmin={isAdmin}
       initialStep="basics"
       presets={presets}
+      comingSoon={splitDirectory(directory).comingSoon.map((row) => row.competition_name)}
       officialSeasons={isAdmin ? official : []}
       initialKind={kind === "official" && isAdmin ? "official" : null}
     />

@@ -4,7 +4,8 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { LocalTime } from "@/components/local-time";
 import { ReportActions, SingleReportActions, UnhideButton } from "@/components/moderation-controls";
-import { PageFallback, PageShell } from "@/components/page-shell";
+import { PageFallback } from "@/components/page-fallback";
+import { PageShell } from "@/components/page-shell";
 import { TeamBadge } from "@/components/team-badge";
 import { getSession, isCurrentUserAdmin } from "@/lib/auth";
 import {

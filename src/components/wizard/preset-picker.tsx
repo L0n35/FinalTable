@@ -43,7 +43,20 @@ function ChoiceList({
   );
 }
 
-export function PresetPicker({ presets, onBack }: { presets: Preset[]; onBack: () => void }) {
+function ComingLine({ names }: { names: string[] }) {
+  if (names.length === 0) return null;
+  return <p className="text-sm text-muted">Coming for 2027-28: {names.join(", ")}.</p>;
+}
+
+export function PresetPicker({
+  presets,
+  comingSoon = [],
+  onBack,
+}: {
+  presets: Preset[];
+  comingSoon?: string[];
+  onBack: () => void;
+}) {
   const router = useRouter();
   const [sport, setSport] = useState<string | null>(null);
   const [competitionId, setCompetitionId] = useState<string | null>(null);
@@ -107,6 +120,7 @@ export function PresetPicker({ presets, onBack }: { presets: Preset[]; onBack: (
     return (
       <div className="flex flex-col gap-4">
         <p className="text-muted">No real leagues are open right now. You can make your own instead.</p>
+        <ComingLine names={comingSoon} />
         {backButton}
       </div>
     );
@@ -148,10 +162,13 @@ export function PresetPicker({ presets, onBack }: { presets: Preset[]; onBack: (
   return (
     <div className="flex flex-col gap-4">
       {!sport && (
-        <ChoiceList
-          label="Sports"
-          items={sports.map((item) => ({ key: item, title: item, onClick: () => setSport(item) }))}
-        />
+        <>
+          <ChoiceList
+            label="Sports"
+            items={sports.map((item) => ({ key: item, title: item, onClick: () => setSport(item) }))}
+          />
+          <ComingLine names={comingSoon} />
+        </>
       )}
       {sport && !competitionId && (
         <ChoiceList

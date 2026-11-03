@@ -2,7 +2,7 @@
 
 import type { ComponentProps } from "react";
 import dynamic from "next/dynamic";
-import { PageFallback } from "@/components/page-shell";
+import { PageFallback } from "@/components/page-fallback";
 import type { LeagueWizard } from "@/components/wizard/league-wizard";
 
 // Date fields and time zones depend on the viewer's device, so the wizard only renders in the browser.

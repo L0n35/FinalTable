@@ -2,7 +2,8 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { submitPrediction } from "@/app/leagues/actions";
-import { PageFallback, PageShell } from "@/components/page-shell";
+import { PageFallback } from "@/components/page-fallback";
+import { PageShell } from "@/components/page-shell";
 import { PredictionLoader } from "@/components/prediction-loader";
 import { getSession } from "@/lib/auth";
 import {

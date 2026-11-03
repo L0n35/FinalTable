@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { supabaseUrl } from "@/lib/supabase/config";
 
 export type LeagueType = "official" | "public" | "private";
@@ -140,6 +141,11 @@ export const LEAGUE_TYPE_LABELS: Record<LeagueType, string> = {
   private: "Private group",
 };
 
+// Sets the colour for the league-card family of styles. Without one, they fall back to their default.
+export function accentStyle(accent: string | null | undefined): CSSProperties | undefined {
+  return accent ? ({ "--league": accent } as CSSProperties) : undefined;
+}
+
 // A league playing an official season that isn't the official league itself.
 export function isPresetLeague(league: Pick<LeagueRow, "type" | "competition_id">): boolean {
   return league.type !== "official" && league.competition_id !== null;
@@ -172,6 +178,25 @@ export function formatDeadline(iso: string, timeZone?: string): string {
     timeZoneName: "short",
     timeZone,
   }).format(new Date(iso));
+}
+
+export function formatShortDate(iso: string, timeZone?: string): string {
+  return new Intl.DateTimeFormat(timeZone ? "en-GB" : undefined, {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    timeZone,
+  }).format(new Date(iso));
+}
+
+// Whole days from far out, then hours and minutes for the last 48 hours.
+export function timeLeft(deadline: number, now: number): string {
+  const minutes = Math.max(0, Math.floor((deadline - now) / 60_000));
+  const days = Math.floor(minutes / 1440);
+  if (days >= 2) return `${days} days left`;
+  const hours = Math.floor(minutes / 60);
+  if (hours > 0) return `${hours}h ${minutes % 60}m left`;
+  return `${minutes}m left`;
 }
 
 export function isLocked(league: Pick<LeagueRow, "status" | "deadline">): boolean {

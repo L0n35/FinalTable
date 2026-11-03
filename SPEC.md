@@ -44,8 +44,8 @@ A **season** is the thing being predicted. A **league** is a group of people pla
 
 | Type | Created by | Listed on Explore | How to join |
 |---|---|---|---|
-| Official | Any admin. Belongs to the site, with no owner | Yes, Official tab | Anyone signed in |
-| Public | Any logged-in user | Yes, Community tab | Anyone |
+| Official | Any admin. Belongs to the site, with no owner | Yes, Leagues tab | Anyone signed in |
+| Public | Any logged-in user | Yes, Groups tab | Anyone |
 | Private | Any logged-in user | No | Code or link |
 
 Public and private leagues can be **custom**, with their own teams and table, or use a **preset**, which plays an official season.
@@ -67,6 +67,15 @@ Public and private leagues can be **custom**, with their own teams and table, or
 ### Guest players
 
 An admin can add someone's table for them, using the SQL Editor only. A guest is a profile with no login, shown under a short name such as "Alex P.". They rank and score like anyone else, but nobody can sign in as them. This is how the friends' Premier League 2026-27 tables were backfilled, and it's the one exception to predictions being written before the deadline. The app has no path for it, so that rule still holds for everything the app does. Guest data goes in `supabase/private/`, which is git-ignored.
+
+### Browsing without an account
+
+The home and Explore pages, and global league and public group pages, need no account. Joining and seeing other people's picks still need sign-in.
+
+- **Cards** show the lock date and time left, and the current leader once a league is live.
+- **Player counts and the crowd's pick** appear from 10 players, so a small league can't give away who picked what. The crowd's pick covers everyone with a table for that season, including private groups, and is rounded to the nearest 5%.
+- **Public groups** reach the home page from 3 players, so a brand-new group can't put its name on the front page. Explore lists them all.
+- **Search engines** see global leagues only. Group and join pages are marked noindex.
 
 ### One prediction per season
 
@@ -206,6 +215,7 @@ The change from Open to Live isn't a scheduled job. It's worked out by comparing
 | Database | Supabase Postgres | Row-level security enforces the rules |
 | Login | Supabase Auth with Google | |
 | Images | Supabase Storage | Logos are resized in the browser |
+| Public pages | Built ahead by Next.js and refreshed at most every 15 minutes | Visitors don't reach the database. Only a change to what's listed clears the pages early, so joining or predicting doesn't |
 | Scheduled jobs | Vercel Cron | Daily database keep-alive |
 | Backups | GitHub Actions | Nightly encrypted database dump |
 | Ranking | `@dnd-kit/react`, pinned to an exact version | See below |

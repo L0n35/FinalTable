@@ -2,7 +2,8 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { AccountSettings } from "@/components/account-settings";
-import { PageFallback, PageShell } from "@/components/page-shell";
+import { PageFallback } from "@/components/page-fallback";
+import { PageShell } from "@/components/page-shell";
 import { getSession } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Your account | Final Table" };

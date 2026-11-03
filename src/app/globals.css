@@ -56,6 +56,123 @@ fieldset {
   min-width: 0;
 }
 
+/* The welcome is for visitors. It's hidden before the first paint, so it never flashes up for players. */
+html[data-session] .visitor-only {
+  display: none;
+}
+
+/* Each league's colour floods in from the right, where the card has room. Text sits on the left, where the
+   wash is light enough to stay readable on every accent. */
+.league-card {
+  --league: #3f8f6b;
+  background:
+    radial-gradient(85% 130% at 105% 15%, color-mix(in srgb, var(--league) 85%, transparent), transparent 70%),
+    linear-gradient(120deg, color-mix(in srgb, var(--league) 26%, transparent), transparent 65%),
+    var(--surface);
+}
+
+/* Faint rows, like a league table fading into the card. */
+.league-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(0deg, rgb(255 255 255 / 0.07) 0 1px, transparent 1px 24px);
+  mask-image: linear-gradient(to left, black, transparent 55%);
+}
+
+.league-tile {
+  --league: #3f8f6b;
+  background:
+    linear-gradient(100deg, color-mix(in srgb, var(--league) 45%, transparent), transparent 85%),
+    var(--surface);
+}
+
+.group-row {
+  --league: var(--line);
+  background: linear-gradient(90deg, var(--league) 0 4px, color-mix(in srgb, var(--league) 16%, var(--surface)) 4px, var(--surface) 70%);
+}
+
+.league-header {
+  --league: #3f8f6b;
+  background:
+    radial-gradient(85% 130% at 105% 15%, color-mix(in srgb, var(--league) 70%, transparent), transparent 70%),
+    linear-gradient(120deg, color-mix(in srgb, var(--league) 26%, transparent), transparent 65%),
+    var(--surface);
+}
+
+/* A slim band of league colours along the top of every page. */
+body::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 30;
+  height: 3px;
+  background: linear-gradient(90deg, #7a2bf0, #1e90ff, #0fb5ae, #16a34a, var(--accent), #f97316, #e5007d);
+  pointer-events: none;
+}
+
+/* Soft colour behind the welcome, so the page opens with some life before the first card. */
+.hero-glow {
+  position: relative;
+}
+
+/* As wide as the screen, so the colour fades out rather than stopping at the edge of the content. */
+.hero-glow::before {
+  content: "";
+  position: absolute;
+  top: -4rem;
+  bottom: -2rem;
+  left: 50%;
+  width: 100vw;
+  z-index: -1;
+  transform: translateX(-50%);
+  background:
+    radial-gradient(55% 45% at 15% 10%, rgb(200 240 74 / 0.16), transparent 70%),
+    radial-gradient(60% 50% at 95% 65%, rgb(122 43 240 / 0.28), transparent 70%);
+  pointer-events: none;
+}
+
+.rail {
+  scrollbar-width: none;
+}
+
+.rail::-webkit-scrollbar {
+  display: none;
+}
+
+.badge-marquee {
+  mask-image: linear-gradient(90deg, transparent, black 8%, black 92%, transparent);
+}
+
+.badge-marquee-track {
+  animation: marquee 70s linear infinite;
+}
+
+/* The list is doubled, so halfway along looks exactly like the start. */
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: var(--relegation);
+  animation: live-pulse 1.6s ease-out infinite;
+}
+
+@keyframes live-pulse {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--relegation) 70%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 8px transparent;
+  }
+}
+
 /* Only the handle claims touches, so swiping a row still scrolls the page. */
 .drag-handle {
   touch-action: none;
@@ -102,7 +219,9 @@ dialog::backdrop {
 
 @media (prefers-reduced-motion: reduce) {
   .sheet[open],
-  .pop {
+  .pop,
+  .live-dot,
+  .badge-marquee-track {
     animation: none;
   }
 }
