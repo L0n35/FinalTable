@@ -1333,6 +1333,105 @@ describe("reports", () => {
     ]);
     expect(rows[0].status).toBe("actioned");
   });
+
+  it("allows one open report per person for each league or team", async () => {
+    const league = await customLeague();
+    await report(alice, league.id);
+    await expect(report(alice, league.id)).rejects.toThrow(/one_open_report/);
+    await expect(report(alice, league.id, league.teams[0])).resolves.toBeDefined();
+    await expect(report(alice, league.id, league.teams[0])).rejects.toThrow(/one_open_report/);
+    await expect(report(bob, league.id)).resolves.toBeDefined();
+
+    await db.asUser(admin, "select public.resolve_league_reports($1, false)", [league.id]);
+    await expect(report(alice, league.id)).resolves.toBeDefined();
+  });
+
+  it("limits how many reports someone can send in a day", async () => {
+    const league = await customLeague();
+    await db.pg.query(
+      `insert into public.reports (league_id, reported_by, reason, status)
+       select $1, $2, 'Old', 'dismissed' from generate_series(1, 20)`,
+      [league.id, alice],
+    );
+    await expect(report(alice, league.id)).rejects.toThrow(/report_limit_reached/);
+    await expect(report(bob, league.id)).resolves.toBeDefined();
+  });
+
+  const statuses = async (leagueId: string) =>
+    (
+      await db.pg.query<{ status: string }>("select status from public.reports where league_id = $1", [leagueId])
+    ).rows.map((row) => row.status);
+  const hiddenAt = async (leagueId: string) =>
+    (await db.pg.query<{ hidden_at: string | null }>("select hidden_at from public.leagues where id = $1", [leagueId]))
+      .rows[0].hidden_at;
+
+  it("dismisses every open report on a league without hiding it", async () => {
+    const league = await customLeague();
+    await report(alice, league.id);
+    await report(bob, league.id);
+    await db.asUser(admin, "select public.resolve_league_reports($1, false)", [league.id]);
+    expect(await statuses(league.id)).toEqual(["dismissed", "dismissed"]);
+    expect(await hiddenAt(league.id)).toBeNull();
+  });
+
+  it("hides a league and closes its reports, which takes it away from players", async () => {
+    const league = await customLeague();
+    await join(alice, league.id);
+    await report(bob, league.id);
+    await db.asUser(admin, "select public.resolve_league_reports($1, true)", [league.id]);
+    expect(await statuses(league.id)).toEqual(["actioned"]);
+    expect(await hiddenAt(league.id)).not.toBeNull();
+
+    const visible = "select id from public.league_details where id = $1";
+    expect(await db.asUser(alice, visible, [league.id])).toHaveLength(0);
+    expect(await db.asUser(creator, visible, [league.id])).toHaveLength(1);
+    expect(await db.asUser(admin, visible, [league.id])).toHaveLength(1);
+
+    await db.asUser(admin, "select public.set_league_hidden($1, false)", [league.id]);
+    expect(await db.asUser(alice, visible, [league.id])).toHaveLength(1);
+  });
+
+  it("only lets admins resolve reports or remove logos", async () => {
+    const league = await customLeague();
+    for (const user of [alice, creator]) {
+      await expect(db.asUser(user, "select public.resolve_league_reports($1, true)", [league.id])).rejects.toThrow(
+        /admin_only/,
+      );
+      await expect(db.asUser(user, "select public.remove_team_logo($1)", [league.teams[0]])).rejects.toThrow(
+        /admin_only/,
+      );
+    }
+    await expect(db.asUser(null, "select public.resolve_league_reports($1, true)", [league.id])).rejects.toThrow(
+      /permission denied/,
+    );
+  });
+
+  it("removes a logo after the deadline, closes that team's reports and leaves others open", async () => {
+    const league = await customLeague();
+    const [team] = league.teams;
+    const path = `${league.season_id}/logo.webp`;
+    await db.pg.query("update public.teams set logo_path = $1 where id = $2", [path, team]);
+    await db.pg.query("insert into storage.objects (bucket_id, name) values ('team-logos', $1)", [path]);
+    await report(alice, league.id, team);
+    await report(bob, league.id);
+    await db.passDeadline(league.season_id);
+
+    const [{ remove_team_logo: removed }] = await db.asUser<{ remove_team_logo: string }>(
+      admin,
+      "select public.remove_team_logo($1)",
+      [team],
+    );
+    expect(removed).toBe(path);
+    const { rows } = await db.pg.query<{ logo_path: string | null }>("select logo_path from public.teams where id = $1", [
+      team,
+    ]);
+    expect(rows[0].logo_path).toBeNull();
+    expect((await statuses(league.id)).sort()).toEqual(["actioned", "open"]);
+
+    const remove = "delete from storage.objects where name = $1 returning name";
+    expect(await db.asUser(creator, remove, [path])).toHaveLength(0);
+    expect(await db.asUser(admin, remove, [path])).toHaveLength(1);
+  });
 });
 
 describe("logo storage", () => {

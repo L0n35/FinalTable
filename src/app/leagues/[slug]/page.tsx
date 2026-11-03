@@ -6,7 +6,9 @@ import { JoinButton } from "@/components/join-button";
 import { LeagueTable } from "@/components/league-table";
 import { LiveSeason, readLiveView } from "@/components/live-season";
 import { LocalTime } from "@/components/local-time";
+import { LeagueModeration } from "@/components/moderation-controls";
 import { PageFallback, PageShell } from "@/components/page-shell";
+import { ReportButton } from "@/components/report-button";
 import { SharePanel } from "@/components/share-panel";
 import { ZoneLegend } from "@/components/zone-legend";
 import { getSession, isCurrentUserAdmin } from "@/lib/auth";
@@ -45,7 +47,7 @@ async function League({
   const league = data as unknown as LeagueRow | null;
   if (!league) notFound();
 
-  const [{ data: teamRows }, membership, ownPrediction, isAdmin] = await Promise.all([
+  const [{ data: teamRowsData }, membership, ownPrediction, isAdmin] = await Promise.all([
     supabase.from("teams").select(TEAM_COLUMNS).eq("season_id", league.season_id),
     userId
       ? supabase
@@ -66,7 +68,8 @@ async function League({
     isCurrentUserAdmin(session),
   ]);
 
-  const teams = ((teamRows ?? []) as TeamRow[])
+  const teamRows = (teamRowsData ?? []) as TeamRow[];
+  const teams = teamRows
     .map(toTeam)
     .sort((a, b) => a.name.localeCompare(b.name));
   const role = membership.data?.role as string | undefined;
@@ -80,6 +83,7 @@ async function League({
   const prediction = ownPrediction.data as { team_order: string[]; needs_review: boolean } | null;
   const ownOrder = prediction && !prediction.needs_review ? prediction.team_order : null;
   const title = seasonTitle(league);
+  const isHidden = league.hidden_at !== null;
 
   return (
     <div className="flex flex-col gap-5">
@@ -97,6 +101,13 @@ async function League({
         </p>
       </div>
 
+      {isHidden && (
+        <p role="status" className="rounded-lg border border-relegation bg-surface p-3">
+          This league has been hidden by an admin while it&apos;s reviewed. Its players can&apos;t open it, and
+          nobody new can join.
+        </p>
+      )}
+
       {isDraft ? (
         <Link
           href={`/leagues/${league.id}/setup?step=teams`}
@@ -111,7 +122,7 @@ async function League({
         >
           {locked ? "Sign in to follow" : "Sign in to join"}
         </Link>
-      ) : !role ? (
+      ) : isHidden && !role ? null : !role ? (
         <JoinButton
           leagueId={league.id}
           slug={league.slug}
@@ -155,7 +166,7 @@ async function League({
         />
       )}
 
-      {!isDraft && (canManage || role || league.type !== "private") && (
+      {!isDraft && !isHidden && (canManage || role || league.type !== "private") && (
         <SharePanel
           leagueId={league.id}
           leagueName={league.name}
@@ -184,6 +195,20 @@ async function League({
           <ZoneLegend zones={zonesOf(league)} total={teams.length} />
           <LeagueTable teams={teams} zones={zonesOf(league)} />
         </section>
+      )}
+
+      {isAdmin && !isDraft && (
+        <LeagueModeration leagueId={league.id} isHidden={isHidden} isOfficial={isOfficial} />
+      )}
+
+      {userId && !isDraft && !isCreator && !isHidden && (
+        <ReportButton
+          leagueId={league.id}
+          logoTeams={teamRows
+            .filter((team) => team.logo_path)
+            .map((team) => ({ id: team.id, name: team.name }))
+            .sort((a, b) => a.name.localeCompare(b.name))}
+        />
       )}
     </div>
   );

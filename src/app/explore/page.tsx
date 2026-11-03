@@ -120,7 +120,9 @@ async function readLeagues({ supabase }: Session, tab: string, query: string) {
     .from("league_details")
     .select(LEAGUE_COLUMNS)
     .eq("type", tab === "community" ? "public" : "official")
-    .eq("status", "published");
+    .eq("status", "published")
+    // Admins and a hidden league's creator can read it, but it still isn't listed.
+    .is("hidden_at", null);
   if (tab === "community") {
     // % and _ are wildcards in a pattern, so a search for them is treated as plain text.
     const pattern = query.replace(/[%_\\]/g, "\\$&");

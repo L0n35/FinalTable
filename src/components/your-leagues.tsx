@@ -35,6 +35,7 @@ export async function YourLeagues() {
   );
 
   const statusOf = (league: LeagueRow) => {
+    if (league.hidden_at) return { label: "Hidden", urgent: true };
     if (league.status === "draft") return null;
     if (league.status === "finished") return { label: "Finished", urgent: false };
     if (isLocked(league)) return { label: "Live", urgent: false };

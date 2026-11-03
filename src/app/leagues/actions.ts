@@ -64,6 +64,8 @@ const MESSAGES: Record<string, string> = {
   league_not_live: "This season isn't live, so its standings can't change.",
   deadline_not_reached: "Standings can be updated once the league has started.",
   no_standings_yet: "Update the standings at least once before finishing the season.",
+  one_open_report: "You've already reported this, and an admin will take a look.",
+  report_limit_reached: "You've sent a lot of reports today. Please try again tomorrow.",
   zones_fit: "Promotion and relegation overlap. Please check the format step.",
   playoff_between_zones: "Playoff places overlap with other zones. Please check the format step.",
   seasons_team_count_check: "A league needs between 4 and 40 teams.",
@@ -84,6 +86,16 @@ async function readLeague(supabase: Awaited<ReturnType<typeof createClient>>, le
     .eq("id", leagueId)
     .single();
   return { league: data as unknown as LeagueRow | null, error };
+}
+
+// Deletes logo files, unless a copied season still uses them. A failure here only leaves an unused
+// file behind.
+async function removeUnusedLogos(supabase: Awaited<ReturnType<typeof createClient>>, paths: string[]) {
+  if (paths.length === 0) return;
+  const { data: stillUsed } = await supabase.from("teams").select("logo_path").in("logo_path", paths);
+  const shared = new Set((stillUsed ?? []).map((row) => row.logo_path as string));
+  const removable = paths.filter((path) => !shared.has(path));
+  if (removable.length > 0) await supabase.storage.from("team-logos").remove(removable);
 }
 
 export async function createCustomLeague(input: CustomLeagueInput): Promise<Result<{ id: string }>> {
@@ -190,18 +202,13 @@ export async function saveTeams(
   });
   if (error) return failure(error);
 
-  // Clean up replaced logos, unless a copied season still uses the file. A failure here only
-  // leaves an unused file behind.
   const inUse = new Set(teams.map((team) => team.logo_path));
-  const unused = (before ?? [])
-    .map((row) => row.logo_path as string | null)
-    .filter((path): path is string => Boolean(path) && !inUse.has(path));
-  if (unused.length > 0) {
-    const { data: stillUsed } = await supabase.from("teams").select("logo_path").in("logo_path", unused);
-    const shared = new Set((stillUsed ?? []).map((row) => row.logo_path as string));
-    const removable = unused.filter((path) => !shared.has(path));
-    if (removable.length > 0) await supabase.storage.from("team-logos").remove(removable);
-  }
+  await removeUnusedLogos(
+    supabase,
+    (before ?? [])
+      .map((row) => row.logo_path as string | null)
+      .filter((path): path is string => Boolean(path) && !inUse.has(path)),
+  );
 
   const [{ league: saved, error: readError }, teamsResult] = await Promise.all([
     readLeague(supabase, league.id),
@@ -225,8 +232,16 @@ export async function publishSeason(
 
 export async function deleteLeague(leagueId: string): Promise<Result<object>> {
   const supabase = await createClient();
+  const { league } = await readLeague(supabase, leagueId);
+  const { data: before } = league
+    ? await supabase.from("teams").select("logo_path").eq("season_id", league.season_id)
+    : { data: null };
   const { error } = await supabase.rpc("delete_league", { p_league_id: leagueId });
   if (error) return failure(error);
+  await removeUnusedLogos(
+    supabase,
+    (before ?? []).map((row) => row.logo_path as string | null).filter((path): path is string => Boolean(path)),
+  );
   revalidatePath("/", "layout");
   return { ok: true };
 }
@@ -305,6 +320,44 @@ export async function reopenSeason(seasonId: string): Promise<Result<object>> {
   const supabase = await createClient();
   const { error } = await supabase.rpc("reopen_season", { p_season_id: seasonId });
   if (error) return failure(error);
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function submitReport(
+  leagueId: string,
+  teamId: string | null,
+  reason: string,
+): Promise<Result<object>> {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("reports")
+    .insert({ league_id: leagueId, team_id: teamId, reason: reason.trim() });
+  if (error) return failure(error);
+  return { ok: true };
+}
+
+export async function resolveReports(leagueId: string, hide: boolean): Promise<Result<object>> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("resolve_league_reports", { p_league_id: leagueId, p_hide: hide });
+  if (error) return failure(error);
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function setLeagueHidden(leagueId: string, hidden: boolean): Promise<Result<object>> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_league_hidden", { p_league_id: leagueId, p_hidden: hidden });
+  if (error) return failure(error);
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function removeTeamLogo(teamId: string): Promise<Result<object>> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("remove_team_logo", { p_team_id: teamId });
+  if (error) return failure(error);
+  await removeUnusedLogos(supabase, data ? [data as string] : []);
   revalidatePath("/", "layout");
   return { ok: true };
 }

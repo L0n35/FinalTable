@@ -13,16 +13,30 @@ async function Admin() {
   if (!session.userId) redirect("/login?next=/admin");
   if (!(await isCurrentUserAdmin(session))) notFound();
 
-  const { data } = await session.supabase
-    .from("league_details")
-    .select(LEAGUE_COLUMNS)
-    .eq("type", "official")
-    .order("deadline", { ascending: false });
+  const [{ data }, { data: openReports }] = await Promise.all([
+    session.supabase
+      .from("league_details")
+      .select(LEAGUE_COLUMNS)
+      .eq("type", "official")
+      .order("deadline", { ascending: false }),
+    session.supabase.from("reports").select("id").eq("status", "open").limit(100),
+  ]);
+  const reportCount = openReports?.length ?? 0;
   const leagues = (data ?? []) as unknown as LeagueRow[];
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="font-display text-4xl font-bold">Official leagues</h1>
+      <h1 className="font-display text-4xl font-bold">Admin</h1>
+      <Link
+        href="/admin/reports"
+        className="flex h-13 items-center justify-between rounded-lg border border-line px-4 font-semibold"
+      >
+        <span>Reports</span>
+        <span className={reportCount > 0 ? "text-accent" : "text-muted"}>
+          {reportCount === 100 ? "100+" : reportCount} open
+        </span>
+      </Link>
+      <h2 className="font-display text-2xl font-bold">Official leagues</h2>
       <Link
         href="/leagues/new?kind=official"
         className="flex h-13 items-center justify-center rounded-lg bg-accent font-display text-xl font-bold text-accent-ink"

@@ -185,8 +185,9 @@ The change from Open to Live isn't a scheduled job. It's worked out by comparing
 
 ## 6. Moderation
 
-- Any logged-in user can report a public league or a team logo.
-- Admins review reports in a simple queue, and can dismiss them or hide the league.
+- Any logged-in user can report a league they can see, or one of its team logos. Each person can have one open report per league or team, and send 20 a day.
+- Admins review reports in a queue grouped by league. They can dismiss them, hide the league, or remove a reported logo, which also deletes the file because logos are served publicly.
+- Admins can also hide, unhide or delete any league from its page. A hidden league stays visible only to its creator and admins, and the creator is told it's under review.
 - League creation is limited to 5 per user per day.
 - Terms of use make uploaders responsible for the images they upload. Club logos may be trademarked, so official leagues should use auto-generated badges unless you have permission.
 
@@ -284,7 +285,7 @@ Limits were checked on 2 November 2026 and can change.
 3. **Creating and joining:** the setup wizard, logos and badges, codes and links, and in-app browser handling.
 4. **Predictions:** connect the ranking screen to real data, including drafts, submit, edit and deadline lock.
 5. **Live season (done):** standings updates, scoring, leaderboard, pick reveal and spectators.
-6. **Discovery and admin:** Explore, official leagues and presets (done), reports and the admin queue.
+6. **Discovery and admin (done):** Explore, official leagues and presets, reports and the admin queue.
 7. **Launch readiness:** calendar option, backups, usage alerts, legal pages and a final device pass.
 
 ## 11. Decisions

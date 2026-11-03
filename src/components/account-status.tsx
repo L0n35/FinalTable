@@ -32,7 +32,7 @@ export async function AccountStatus() {
           href="/admin"
           className="flex h-12 items-center justify-center rounded-lg border border-line font-semibold"
         >
-          Manage official leagues
+          Admin
         </Link>
       )}
       <div className="flex items-center justify-between gap-3">
