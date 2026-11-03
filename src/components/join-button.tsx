@@ -27,7 +27,8 @@ export function JoinButton({
     startTransition(async () => {
       const result = await joinLeague(leagueId, joinCode);
       if (result.ok) {
-        router.replace(`/leagues/${slug}`);
+        // Players go straight to making their prediction.
+        router.replace(result.role === "player" ? `/leagues/${slug}/predict` : `/leagues/${slug}`);
         router.refresh();
       } else {
         setError(result.error);

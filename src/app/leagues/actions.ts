@@ -43,6 +43,10 @@ const MESSAGES: Record<string, string> = {
   duplicate_team_name: "Each team needs a different name.",
   invalid_teams: "Something about those teams wasn't valid. Please check and try again.",
   not_authenticated: "Please sign in first.",
+  deadline_passed: "Predictions have closed for this league.",
+  league_not_open: "This league isn't open for predictions.",
+  not_a_player: "Only players in this league can submit a prediction.",
+  invalid_team_order: "The teams in this league have changed. Please reload and check your table.",
   zones_fit: "Promotion and relegation overlap. Please check the format step.",
   playoff_between_zones: "Playoff places overlap with other zones. Please check the format step.",
   leagues_team_count_check: "A league needs between 4 and 40 teams.",
@@ -193,6 +197,22 @@ export async function joinLeague(
   if (error) return failure(error);
   revalidatePath("/", "layout");
   return { ok: true, role: data as string };
+}
+
+export async function submitPrediction(
+  leagueId: string,
+  order: string[],
+): Promise<{ ok: true } | { ok: false; error: string; closed?: boolean }> {
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("submit_prediction", {
+    p_league_id: leagueId,
+    p_team_order: order,
+  });
+  if (error) {
+    return { ...failure(error), closed: error.message.includes("deadline_passed") };
+  }
+  revalidatePath("/", "layout");
+  return { ok: true };
 }
 
 export async function rotateJoinCode(leagueId: string): Promise<Result<{ code: string }>> {

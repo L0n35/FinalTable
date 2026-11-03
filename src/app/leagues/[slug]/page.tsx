@@ -34,12 +34,20 @@ async function League({ params }: { params: Promise<{ slug: string }> }) {
   const league = data as unknown as LeagueRow | null;
   if (!league) notFound();
 
-  const [{ data: teamRows }, membership, isAdmin] = await Promise.all([
+  const [{ data: teamRows }, membership, ownPrediction, isAdmin] = await Promise.all([
     supabase.from("teams").select(TEAM_COLUMNS).eq("league_id", league.id),
     userId
       ? supabase
           .from("memberships")
           .select("role")
+          .eq("league_id", league.id)
+          .eq("user_id", userId)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
+    userId
+      ? supabase
+          .from("predictions")
+          .select("team_order, needs_review")
           .eq("league_id", league.id)
           .eq("user_id", userId)
           .maybeSingle()
@@ -55,6 +63,11 @@ async function League({ params }: { params: Promise<{ slug: string }> }) {
   const canManage = isCreator || isAdmin;
   const locked = isLocked(league);
   const isDraft = league.status === "draft";
+  const prediction = ownPrediction.data as { team_order: string[]; needs_review: boolean } | null;
+  const teamsById = new Map(teams.map((team) => [team.id, team]));
+  const predictedTeams = (prediction?.needs_review ? [] : (prediction?.team_order ?? []))
+    .map((id) => teamsById.get(id))
+    .filter((team) => team !== undefined);
 
   return (
     <div className="flex flex-col gap-5">
@@ -90,14 +103,32 @@ async function League({ params }: { params: Promise<{ slug: string }> }) {
           slug={league.slug}
           label={locked ? "Follow this league" : "Join this league"}
         />
+      ) : role === "player" && !locked ? (
+        <Link
+          href={`/leagues/${league.slug}/predict`}
+          className="flex h-13 items-center justify-center rounded-lg bg-accent font-display text-xl font-bold text-accent-ink"
+        >
+          {prediction?.needs_review
+            ? "Review your prediction"
+            : prediction
+              ? "Edit your prediction"
+              : "Make your prediction"}
+        </Link>
       ) : (
         <p className="rounded-lg border border-line bg-surface p-3">
           {role === "spectator"
             ? "You're following this league as a spectator."
-            : locked
-              ? "This league has started."
-              : "You're in! Making your prediction arrives in the next update."}
+            : predictedTeams.length > 0
+              ? "This league has started, and your prediction is locked in."
+              : "This league has started, and you didn't get a prediction in."}
         </p>
+      )}
+
+      {role === "player" && locked && predictedTeams.length > 0 && (
+        <section aria-label="Your prediction">
+          <h2 className="mb-2 font-display text-xl font-bold">Your prediction</h2>
+          <LeagueTable teams={predictedTeams} zones={zonesOf(league)} />
+        </section>
       )}
 
       {!isDraft && (canManage || role || league.type !== "private") && (

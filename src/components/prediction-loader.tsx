@@ -1,7 +1,8 @@
 "use client";
 
+import type { ComponentProps } from "react";
 import dynamic from "next/dynamic";
-import { demoLeague } from "@/lib/demo-league";
+import type { PredictionScreen as Screen } from "@/components/prediction-screen";
 
 // The screen restores saved orders and a countdown from the browser, so it only renders there.
 const PredictionScreen = dynamic(
@@ -18,6 +19,6 @@ const PredictionScreen = dynamic(
   },
 );
 
-export function PredictionLoader() {
-  return <PredictionScreen league={demoLeague} />;
+export function PredictionLoader(props: ComponentProps<typeof Screen>) {
+  return <PredictionScreen {...props} />;
 }
