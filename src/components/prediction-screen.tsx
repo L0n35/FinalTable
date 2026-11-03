@@ -6,6 +6,7 @@ import { arrayMove } from "@dnd-kit/helpers";
 import { RankingList } from "@/components/ranking-list";
 import { Sheet } from "@/components/sheet";
 import { TeamBadge } from "@/components/team-badge";
+import { ZoneLegend } from "@/components/zone-legend";
 import type { League } from "@/lib/demo-league";
 import { readSavedOrder, writeSavedOrder } from "@/lib/saved-order";
 
@@ -149,8 +150,6 @@ export function PredictionScreen({ league }: { league: League }) {
 
   const isSubmitted = sameOrder(order, submitted);
   const isAlphabetical = sameOrder(order, alphabetical);
-  const { promotion, playoffFrom, playoffTo, relegation } = league.zones;
-  const total = order.length;
   const champion = teamsById.get(order[0]);
 
   return (
@@ -188,17 +187,7 @@ export function PredictionScreen({ league }: { league: League }) {
       </header>
 
       <main className="px-4 pt-3 pb-32">
-        <ul className="mb-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted">
-          <li>
-            <span className="text-promotion">■</span> Promoted 1–{promotion}
-          </li>
-          <li>
-            <span className="text-playoff">■</span> Playoffs {playoffFrom}–{playoffTo}
-          </li>
-          <li>
-            <span className="text-relegation">■</span> Relegated {total - relegation + 1}–{total}
-          </li>
-        </ul>
+        <ZoneLegend zones={league.zones} total={order.length} />
 
         <RankingList
           teams={league.teams}

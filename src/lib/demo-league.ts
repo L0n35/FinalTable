@@ -1,17 +1,4 @@
-export type Team = {
-  id: string;
-  name: string;
-  initials: string;
-  primary: string;
-  secondary: string;
-};
-
-export type Zones = {
-  promotion: number;
-  playoffFrom: number;
-  playoffTo: number;
-  relegation: number;
-};
+import type { Team, Zones } from "@/lib/leagues";
 
 export type League = {
   id: string;

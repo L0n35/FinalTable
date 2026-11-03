@@ -6,8 +6,8 @@ import { move } from "@dnd-kit/helpers";
 import { DragDropProvider } from "@dnd-kit/react";
 import { isSortable, useSortable } from "@dnd-kit/react/sortable";
 import { TeamBadge } from "@/components/team-badge";
-import type { Team, Zones } from "@/lib/demo-league";
-import { zoneFor, type Zone } from "@/lib/zones";
+import type { Team, Zones } from "@/lib/leagues";
+import { zoneFor, zoneStyles } from "@/lib/zones";
 
 // dnd-kit delays touch drags by 250ms by default. Drags only start from the
 // handle here, so there is no scroll gesture to disambiguate and it can lift at once.
@@ -20,12 +20,6 @@ const sensors = [
 ];
 
 type AccessibilityOptions = NonNullable<ConstructorParameters<typeof Accessibility>[1]>;
-
-const zoneStyles: Record<NonNullable<Zone>, string> = {
-  promotion: "bg-promotion/15 text-promotion",
-  playoff: "bg-playoff/15 text-playoff",
-  relegation: "bg-relegation/15 text-relegation",
-};
 
 type RankingListProps = {
   teams: Team[];

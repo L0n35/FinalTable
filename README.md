@@ -20,7 +20,7 @@ The app runs without any accounts, but sign-in stays off until you complete thes
 ### 1. Create the Supabase project
 
 1. Create a free project at [supabase.com](https://supabase.com).
-2. Open **SQL Editor**, paste in all of [supabase/migrations/20261102120000_initial_schema.sql](supabase/migrations/20261102120000_initial_schema.sql), and run it.
+2. Open **SQL Editor** and run each file in [supabase/migrations](supabase/migrations) in date order, pasting in the whole file each time. Run each file only once.
 3. Copy `.env.example` to `.env.local`, then add the project URL and publishable key from the project's API settings. Never put a secret or service role key in this file.
 
 ### 2. Set up Google sign-in

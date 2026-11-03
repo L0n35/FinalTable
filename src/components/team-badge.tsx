@@ -1,6 +1,21 @@
-import type { Team } from "@/lib/demo-league";
+import Image from "next/image";
+import type { Team } from "@/lib/leagues";
 
 export function TeamBadge({ team }: { team: Team }) {
+  if (team.logoUrl) {
+    // Served straight from storage, to stay clear of the free plan's image optimisation limit.
+    return (
+      <Image
+        src={team.logoUrl}
+        alt=""
+        width={36}
+        height={36}
+        unoptimized
+        className="h-9 w-9 shrink-0 object-contain"
+      />
+    );
+  }
+
   return (
     <svg
       viewBox="0 0 36 40"

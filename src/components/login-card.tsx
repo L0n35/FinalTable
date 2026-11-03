@@ -1,15 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { useSearchParams } from "next/navigation";
+import { InAppNotice } from "@/components/in-app-notice";
+import { detectInAppBrowser, type InAppBrowser } from "@/lib/in-app-browser";
 import { safeNextPath } from "@/lib/safe-next-path";
 import { createClient } from "@/lib/supabase/client";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
+
+const subscribeToNothing = () => () => {};
+
+// Cached so React sees a stable value between renders.
+let cachedInAppBrowser: InAppBrowser | undefined;
+function readInAppBrowser() {
+  cachedInAppBrowser ??= detectInAppBrowser(navigator.userAgent);
+  return cachedInAppBrowser;
+}
 
 export function LoginCard() {
   const searchParams = useSearchParams();
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [failed, setFailed] = useState(searchParams.has("error"));
+  const [dismissedNotice, setDismissedNotice] = useState(false);
+  const inAppBrowser = useSyncExternalStore(subscribeToNothing, readInAppBrowser, () => null);
 
   const signIn = async () => {
     setIsRedirecting(true);
@@ -29,6 +42,10 @@ export function LoginCard() {
 
   if (!isSupabaseConfigured) {
     return <p className="text-center text-muted">Sign-in isn&apos;t set up yet.</p>;
+  }
+
+  if (inAppBrowser && !dismissedNotice) {
+    return <InAppNotice browser={inAppBrowser} onContinue={() => setDismissedNotice(true)} />;
   }
 
   return (
