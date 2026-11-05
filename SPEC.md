@@ -151,7 +151,7 @@ This is the most important screen in the app.
 
 - The order is kept on the device as a draft after every move, so an accidental refresh loses nothing.
 - If the list is still in alphabetical order, Submit asks for confirmation.
-- After submitting, the player sees a short success moment, their predicted table, the deadline, an **Add to calendar** option and a share link.
+- After submitting, the player sees a short success moment, their predicted table, the deadline and a share link.
 - Players can return and resubmit any time before the deadline. If time runs out mid-edit, the last submitted version stands and the screen says so.
 
 ### 3.4 After the deadline
@@ -313,7 +313,7 @@ Limits were checked on 2 November 2026 and can change.
 4. **Predictions:** connect the ranking screen to real data, including drafts, submit, edit and deadline lock.
 5. **Live season (done):** standings updates, scoring, leaderboard, pick reveal and spectators.
 6. **Discovery and admin (done):** Explore, official leagues and presets, reports and the admin queue.
-7. **Launch readiness:** calendar option, backups, usage alerts, legal pages and a final device pass.
+7. **Launch readiness:** backups, usage alerts, legal pages and a final device pass.
 
 ## 11. Decisions
 
@@ -321,7 +321,7 @@ Limits were checked on 2 November 2026 and can change.
 
 - **Login:** Google only for the first release, accepting that anyone without a Google account can't play.
 - **Points:** test the system in section 4 first, and consider alternatives later.
-- **Reminders:** no email in the first release. The **Add to calendar** option is the only deadline reminder.
+- **Reminders:** no email in the first release, so there are no deadline reminders.
 - **App name:** Final Table.
 
 ### Still open

@@ -2,7 +2,6 @@ import { cache, Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { CalendarLinks } from "@/components/calendar-links";
 import { JoinButton } from "@/components/join-button";
 import { LiveSeason, readLiveView } from "@/components/live-season";
 import { LocalTime } from "@/components/local-time";
@@ -175,14 +174,6 @@ async function League({
             : `This ${noun} has started, and you didn't get a prediction in.`}
         </p>
       ) : null}
-
-      {role === "player" && !locked && !isDraft && !isHidden && (
-        <CalendarLinks
-          title={league.name}
-          deadline={league.deadline}
-          icsHref={`/leagues/${league.slug}/calendar`}
-        />
-      )}
 
       {title && role === "player" && prediction && !locked && (
         <p className="text-sm text-muted">
