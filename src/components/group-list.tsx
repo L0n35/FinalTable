@@ -2,7 +2,7 @@ import Link from "next/link";
 import { JoinedOr } from "@/components/joined-leagues";
 import { StatePill } from "@/components/league-card";
 import { playerCountLabel, type PublicGroup } from "@/lib/directory-rows";
-import { accentStyle } from "@/lib/leagues";
+import { accentStyle, surfaceFor } from "@/lib/leagues";
 
 function GroupRow({ group, accent }: { group: PublicGroup; accent?: string }) {
   return (
@@ -10,7 +10,8 @@ function GroupRow({ group, accent }: { group: PublicGroup; accent?: string }) {
       <Link
         href={`/leagues/${group.slug}`}
         style={accentStyle(accent)}
-        className="group-row flex min-h-16 items-center justify-between gap-3 rounded-xl border border-line py-2.5 pr-3 pl-4"
+        data-surface={surfaceFor(group.sport)}
+        className="group-row flex min-h-16 items-center justify-between gap-3 rounded-xl border border-line py-2.5 pr-3 pl-7"
       >
         <span className="min-w-0">
           <span className="block truncate font-display text-xl leading-tight font-bold">{group.name}</span>

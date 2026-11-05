@@ -22,6 +22,7 @@ import {
   LEAGUE_TYPE_LABELS,
   leagueNoun,
   seasonTitle,
+  surfaceFor,
   TEAM_COLUMNS,
   toTeam,
   zonesOf,
@@ -102,15 +103,19 @@ async function League({
 
   return (
     <div className="flex flex-col gap-5">
-      <div style={accentStyle(league.competition_accent)} className="league-header rounded-2xl border border-white/10 p-4">
-        <p className="text-sm font-semibold text-white/85">
+      <div
+        style={accentStyle(league.competition_accent)}
+        data-surface={surfaceFor(league.sport)}
+        className="league-header relative overflow-hidden rounded-2xl p-5"
+      >
+        <p className="text-sm font-semibold text-foreground/90">
           {LEAGUE_TYPE_LABELS[league.type]}
           {league.sport ? ` · ${league.sport}` : ""}
           {isDraft ? " · Draft" : league.status === "finished" ? " · Finished" : isLive ? " · Live" : ""}
         </p>
-        <h1 className="font-display text-4xl font-bold break-words">{league.name}</h1>
-        {isPreset && <p className="text-white/85">Playing {title}</p>}
-        <p className="mt-1 text-white/85">
+        <h1 className="poster text-4xl break-words">{league.name}</h1>
+        {isPreset && <p className="text-foreground/90">Playing {title}</p>}
+        <p className="mt-1 text-foreground/90">
           {locked ? "Started " : "Predictions lock "}
           <LocalTime iso={league.deadline} />
         </p>

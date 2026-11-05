@@ -2,7 +2,7 @@ import Link from "next/link";
 import { LocalTime } from "@/components/local-time";
 import { getSession } from "@/lib/auth";
 import { isSupabaseConfigured } from "@/lib/supabase/config";
-import { accentStyle, isLocked, LEAGUE_COLUMNS, type LeagueRow } from "@/lib/leagues";
+import { accentStyle, isLocked, LEAGUE_COLUMNS, surfaceFor, type LeagueRow } from "@/lib/leagues";
 
 export async function YourLeagues() {
   if (!isSupabaseConfigured) return null;
@@ -56,7 +56,7 @@ export async function YourLeagues() {
 
   return (
     <section aria-label="Your leagues and groups">
-      <h2 className="mb-3 font-display text-3xl font-bold">Your leagues and groups</h2>
+      <h2 className="poster mb-3 text-3xl">Your leagues and groups</h2>
       <ul className="grid gap-2 md:grid-cols-2">
         {ordered.map((league) => {
           const status = statusOf(league);
@@ -65,7 +65,8 @@ export async function YourLeagues() {
               <Link
                 href={`/leagues/${league.slug}`}
                 style={accentStyle(league.competition_accent)}
-                className="group-row block rounded-xl border border-line py-3 pr-3 pl-4"
+                data-surface={surfaceFor(league.sport)}
+                className="group-row block rounded-xl border border-line py-3 pr-3 pl-7"
               >
                 <span className="flex items-baseline justify-between gap-3">
                   <span className="truncate font-semibold">{league.name}</span>

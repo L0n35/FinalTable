@@ -35,7 +35,7 @@ function Listing({
 }) {
   return (
     <section aria-label={`${title} groups`} className="flex flex-col gap-4">
-      <h2 className="font-display text-3xl font-bold">{title}</h2>
+      <h2 className="poster text-3xl">{title}</h2>
       {byCompetition(groups).map((competition) => (
         <div key={competition.title} className="flex flex-col gap-2">
           <h3 className="font-semibold text-muted">{competition.title}</h3>
@@ -60,11 +60,11 @@ export default async function PublicGroupsPage() {
           <GroupSearchForm />
           {groups.length === 0 ? (
             <div className="rounded-2xl border border-line bg-surface p-5">
-              <h2 className="font-display text-3xl font-bold">No public groups yet</h2>
+              <h2 className="poster text-3xl">No public groups yet</h2>
               <p className="mt-1 text-muted">Be the first, and get your friends in on it.</p>
               <Link
                 href="/leagues/new"
-                className="mt-3 flex h-13 items-center justify-center rounded-lg bg-accent font-display text-xl font-bold text-accent-ink"
+                className="poster mt-3 flex h-13 items-center justify-center rounded-xl bg-accent text-xl text-accent-ink"
               >
                 Create a group
               </Link>

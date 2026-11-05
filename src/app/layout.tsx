@@ -14,6 +14,14 @@ const barlowCondensed = Barlow_Condensed({
   weight: ["600", "700"],
 });
 
+// Only the one heavy slanted cut, because the poster headings are the only thing that use it.
+const barlowPoster = Barlow_Condensed({
+  variable: "--font-barlow-poster",
+  subsets: ["latin"],
+  weight: "800",
+  style: "italic",
+});
+
 export const metadata: Metadata = {
   title: "Final Table",
   description: "Predict how the league will finish, then see who called it.",
@@ -24,7 +32,7 @@ export const metadata: Metadata = {
 const SESSION_GUESS = `if(document.cookie.includes("-auth-token"))document.documentElement.setAttribute("data-session","")`;
 
 export const viewport: Viewport = {
-  themeColor: "#0b1210",
+  themeColor: "#12170f",
   viewportFit: "cover",
 };
 
@@ -32,7 +40,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${barlow.variable} ${barlowCondensed.variable} h-full antialiased`}
+      className={`${barlow.variable} ${barlowCondensed.variable} ${barlowPoster.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <head>

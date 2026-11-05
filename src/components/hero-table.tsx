@@ -39,7 +39,7 @@ export function HeroTable() {
   const leader = order[0];
 
   return (
-    <div aria-hidden="true" className="rounded-2xl border border-line bg-surface p-2 shadow-2xl shadow-black/40">
+    <div aria-hidden="true" className="rounded-2xl border-[1.5px] border-chalk bg-surface p-2">
       <div className="flex items-baseline justify-between px-2 pt-1 pb-2">
         <span className="font-display text-xl font-bold">Your prediction</span>
         <span className="text-sm text-muted">Drag to rank</span>

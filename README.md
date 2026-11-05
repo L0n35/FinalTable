@@ -53,6 +53,10 @@ After the migrations, run [supabase/seed/launch-leagues.sql](supabase/seed/launc
 
 Anything in `supabase/private/` is git-ignored because it holds personal data, so it must never be committed.
 
+## Sports and their grounds
+
+Each sport plays on its own ground: a surface in the league's colour, a chalk boundary and one marking only that sport has. `surfaceFor()` in [src/lib/leagues.ts](src/lib/leagues.ts) picks it from the sport's name, and the grounds are in [src/app/globals.css](src/app/globals.css) under `data-surface`. Motorsport already has one, so adding F1 only needs its competition and teams. A sport with no ground of its own gets a plain one, so to design a new one, add it to both places.
+
 ## Cached pages
 
 The home and Explore pages read the database when the site is built, so run new migrations before deploying. If those reads fail, the build fails and the live site stays as it was, rather than publishing an empty page.

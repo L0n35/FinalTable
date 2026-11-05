@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ComingSoonList, FeaturedLeagueCard, LeagueCard } from "@/components/league-card";
-import { sportIcon, sportsIn, splitDirectory, type DirectoryRow, type ListedLeague } from "@/lib/directory-rows";
+import { sportsIn, splitDirectory, type DirectoryRow, type ListedLeague } from "@/lib/directory-rows";
 
 function CardGrid({ leagues }: { leagues: ListedLeague[] }) {
   return (
@@ -19,7 +19,7 @@ function CardGrid({ leagues }: { leagues: ListedLeague[] }) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section aria-label={title} className="flex flex-col gap-3">
-      <h2 className="font-display text-3xl font-bold">{title}</h2>
+      <h2 className="poster text-3xl">{title}</h2>
       {children}
     </section>
   );
@@ -35,7 +35,7 @@ export function ExploreLeagues({ rows }: { rows: DirectoryRow[] }) {
   );
   const [next, ...otherOpen] = open;
   const chipClass = (selected: boolean) =>
-    `flex h-11 shrink-0 items-center gap-1.5 rounded-full border px-4 font-semibold ${
+    `poster flex h-11 shrink-0 items-center rounded-full border px-4 text-lg normal-case ${
       selected ? "border-accent bg-accent text-accent-ink" : "border-line bg-surface"
     }`;
 
@@ -54,7 +54,6 @@ export function ExploreLeagues({ rows }: { rows: DirectoryRow[] }) {
               onClick={() => setSport(item)}
               className={chipClass(sport === item)}
             >
-              {sportIcon(item) && <span aria-hidden="true">{sportIcon(item)}</span>}
               {item}
             </button>
           ))}
@@ -65,7 +64,7 @@ export function ExploreLeagues({ rows }: { rows: DirectoryRow[] }) {
         <FeaturedLeagueCard league={next} />
       ) : (
         <div className="rounded-2xl border border-line bg-surface p-5">
-          <h2 className="font-display text-3xl font-bold">Nothing to predict {sport ? `in ${sport} ` : ""}right now</h2>
+          <h2 className="poster text-3xl">Nothing to predict {sport ? `in ${sport} ` : ""}right now</h2>
           <p className="mt-1 text-muted">
             {comingSoon.length > 0
               ? "New seasons are on the way. Have a look at what's coming below."

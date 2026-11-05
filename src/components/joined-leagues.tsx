@@ -41,7 +41,7 @@ export function JoinedLeaguesProvider({ children }: { children: ReactNode }) {
 
 export function JoinedOr({
   leagueId,
-  className = "font-semibold text-accent",
+  className = "font-semibold text-accent-on-turf",
   children,
 }: {
   leagueId: string;

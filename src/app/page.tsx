@@ -24,7 +24,7 @@ const HOW_IT_WORKS = [
 function SectionHeading({ title, href, linkLabel }: { title: string; href?: string; linkLabel?: string }) {
   return (
     <div className="mb-3 flex items-baseline justify-between gap-3">
-      <h2 className="font-display text-3xl font-bold">{title}</h2>
+      <h2 className="poster text-3xl">{title}</h2>
       {href && (
         <Link href={href} className="-my-2 shrink-0 py-2 font-semibold text-accent">
           {linkLabel} <span aria-hidden="true">→</span>
@@ -49,10 +49,10 @@ function CardRail({ leagues }: { leagues: ListedLeague[] }) {
 
 function Hero() {
   return (
-    <section aria-label="Welcome" className="visitor-only hero-glow grid items-center gap-6 md:grid-cols-2 md:gap-10">
+    <section aria-label="Welcome" className="visitor-only grid items-center gap-6 md:grid-cols-2 md:gap-10">
       <div>
-        <p className="font-display text-[15.5vw] leading-[0.92] font-bold tracking-tight uppercase md:text-7xl">
-          Call the <span className="block text-accent">final table.</span>
+        <p className="poster text-[15.5vw] leading-[0.92] tracking-tight md:text-7xl">
+          Call the <span className="chalk-underline block w-max max-w-full text-accent">final table.</span>
         </p>
         <p className="mt-3 text-lg text-muted">
           Rank every team before the season starts, then watch your predictions play out against your friends and the
@@ -61,7 +61,7 @@ function Hero() {
         <div className="mt-5 flex flex-col gap-2">
           <Link
             href="/explore"
-            className="flex h-14 items-center justify-center rounded-lg bg-accent font-display text-2xl font-bold text-accent-ink"
+            className="poster flex h-14 items-center justify-center rounded-xl bg-accent text-2xl text-accent-ink"
           >
             Make your first prediction
           </Link>
@@ -82,7 +82,7 @@ function HowItWorks() {
       <ol className="grid gap-2 md:grid-cols-3">
         {HOW_IT_WORKS.map((step, index) => (
           <li key={step.title} className="flex gap-3 rounded-xl border border-line bg-surface p-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent font-display text-xl font-bold text-accent-ink">
+            <span className="poster flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-[1.5px] border-foreground text-xl">
               {index + 1}
             </span>
             <span>
@@ -144,11 +144,11 @@ export default async function Home() {
 
           <section aria-label="Play with friends" className="grid gap-3 md:grid-cols-2">
             <div className="flex flex-col gap-2 rounded-xl border border-line bg-surface p-4">
-              <h2 className="font-display text-2xl font-bold">Got a join code?</h2>
+              <h2 className="poster text-2xl">Got a join code?</h2>
               <JoinCodeForm />
             </div>
             <div className="flex flex-col gap-2 rounded-xl border border-line bg-surface p-4">
-              <h2 className="font-display text-2xl font-bold">Playing with friends?</h2>
+              <h2 className="poster text-2xl">Playing with friends?</h2>
               <Link
                 href="/leagues/new"
                 prefetch={false}

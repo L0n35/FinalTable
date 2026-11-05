@@ -32,7 +32,7 @@ async function NavAccount() {
 export function SiteHeader() {
   return (
     <header className="flex min-h-16 items-center justify-between gap-2 pt-[env(safe-area-inset-top)]">
-      <Link href="/" className="font-display text-2xl font-bold whitespace-nowrap">
+      <Link href="/" className="poster text-2xl whitespace-nowrap">
         Final Table
       </Link>
       <nav aria-label="Main" className="flex items-center gap-1">

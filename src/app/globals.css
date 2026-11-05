@@ -1,18 +1,21 @@
 @import "tailwindcss";
 
+/* A floodlit ground at night: soil-dark surfaces, chalk for text and lines, and gold for what to do next. */
 :root {
   color-scheme: dark;
-  --background: #0b1210;
-  --foreground: #f1f5ef;
-  --surface: #18221e;
-  --surface-raised: #223029;
-  --muted: #a3b2aa;
-  --line: #2f3f38;
-  --accent: #c8f04a;
-  --accent-ink: #14200a;
-  --promotion: #5ee08f;
-  --playoff: #6cc4f5;
-  --relegation: #ff8f7d;
+  --background: #12170f;
+  --foreground: #f4f0e1;
+  --surface: #1d2318;
+  --surface-raised: #2a3122;
+  --muted: #b1b39b;
+  --line: #3a4230;
+  --chalk: rgb(244 240 225 / 0.34);
+  --accent: #f0b429;
+  --accent-on-turf: #ffd777;
+  --accent-ink: #1c1606;
+  --promotion: #8cc152;
+  --playoff: #7fb7c9;
+  --relegation: #e2734a;
 }
 
 @theme inline {
@@ -22,7 +25,9 @@
   --color-surface-raised: var(--surface-raised);
   --color-muted: var(--muted);
   --color-line: var(--line);
+  --color-chalk: var(--chalk);
   --color-accent: var(--accent);
+  --color-accent-on-turf: var(--accent-on-turf);
   --color-accent-ink: var(--accent-ink);
   --color-promotion: var(--promotion);
   --color-playoff: var(--playoff);
@@ -31,8 +36,10 @@
   --font-display: var(--font-barlow-condensed);
 }
 
+/* The whole ground is mown, though only just visibly. */
 body {
-  background: var(--background);
+  background-color: var(--background);
+  background-image: repeating-linear-gradient(90deg, transparent 0 96px, rgb(244 240 225 / 0.014) 96px 192px);
   color: var(--foreground);
   font-family: var(--font-barlow), Arial, Helvetica, sans-serif;
 }
@@ -61,76 +68,172 @@ html[data-session] .visitor-only {
   display: none;
 }
 
-/* Each league's colour floods in from the right, where the card has room. Text sits on the left, where the
-   wash is light enough to stay readable on every accent. */
-.league-card {
-  --league: #3f8f6b;
-  background:
-    radial-gradient(85% 130% at 105% 15%, color-mix(in srgb, var(--league) 85%, transparent), transparent 70%),
-    linear-gradient(120deg, color-mix(in srgb, var(--league) 26%, transparent), transparent 65%),
-    var(--surface);
+/* The loud voice, like a matchday poster. In a layer, so a utility like normal-case can still adjust it. */
+@layer components {
+  .poster {
+    font-family: var(--font-barlow-poster), var(--font-barlow-condensed), sans-serif;
+    font-style: italic;
+    font-weight: 800;
+    text-transform: uppercase;
+  }
 }
 
-/* Faint rows, like a league table fading into the card. */
-.league-card::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: repeating-linear-gradient(0deg, rgb(255 255 255 / 0.07) 0 1px, transparent 1px 24px);
-  mask-image: linear-gradient(to left, black, transparent 55%);
+.chalk-underline {
+  padding-bottom: 12px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 14' preserveAspectRatio='none'%3E%3Cpath d='M3 9C40 4 80 11 122 7S205 3 240 8 285 9 297 5' fill='none' stroke='%23f4f0e1' stroke-width='3.5' stroke-linecap='round'/%3E%3C/svg%3E") left bottom / 92% 12px no-repeat;
 }
 
-.league-tile {
-  --league: #3f8f6b;
-  background:
-    linear-gradient(100deg, color-mix(in srgb, var(--league) 45%, transparent), transparent 85%),
-    var(--surface);
-}
-
+/* Every sport plays on its own ground, from the same family: a surface in the league's colour, a chalk boundary
+   and one marking only that sport has. surfaceFor() in lib/leagues.ts picks one from the sport's name. */
+.league-card,
+.league-header,
+.league-tile,
 .group-row {
-  --league: var(--line);
-  background: linear-gradient(90deg, var(--league) 0 4px, color-mix(in srgb, var(--league) 16%, var(--surface)) 4px, var(--surface) 70%);
+  --base: #182012;
+  --mix-a: 50%;
+  --mix-b: 40%;
+  --ground-a: color-mix(in oklab, var(--league) var(--mix-a), var(--base));
+  --ground-b: color-mix(in oklab, var(--league) var(--mix-b), var(--base));
+  --scale: 1;
+  --size: calc(var(--unit, 36px) * var(--scale));
+  --ground: var(--ground-a);
 }
 
+/* A league with no colour of its own takes the natural colour of its ground. */
+[data-surface="plain"] {
+  --league: #6a7a5c;
+}
+
+/* Mown in straight stripes. */
+[data-surface="football"] {
+  --league: #4f8a3c;
+  --unit: 36px;
+  --ground: repeating-linear-gradient(90deg, var(--ground-a) 0 var(--size), var(--ground-b) var(--size) calc(var(--size) * 2));
+  --marking: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'120'%20height%3D'120'%20fill%3D'none'%20stroke%3D'%23f4f0e1'%20stroke-opacity%3D'.34'%20stroke-width%3D'1.5'%3E%3Cpath%20d%3D'M12%200a108%20108%200%200%200%20108%20108'%2F%3E%3C%2Fsvg%3E");
+}
+
+/* Hardwood planks, with a dark seam between each one. */
+[data-surface="court"] {
+  --league: #c0803a;
+  --base: #3a2412;
+  --mix-a: 40%;
+  --mix-b: 34%;
+  --unit: 18px;
+  --seam: color-mix(in oklab, var(--ground-b) 86%, #000);
+  --ground: repeating-linear-gradient(
+    0deg,
+    var(--ground-a) 0 calc(var(--size) - 1px),
+    var(--seam) calc(var(--size) - 1px) var(--size),
+    var(--ground-b) var(--size) calc(var(--size) * 2 - 1px),
+    var(--seam) calc(var(--size) * 2 - 1px) calc(var(--size) * 2)
+  );
+  --marking: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'64'%20height%3D'116'%20fill%3D'none'%20stroke%3D'%23f4f0e1'%20stroke-opacity%3D'.34'%20stroke-width%3D'1.5'%3E%3Cpath%20d%3D'M64%206H48a52%2052%200%200%200%200%20104h16'%2F%3E%3Ccircle%20cx%3D'54'%20cy%3D'58'%20r%3D'4'%2F%3E%3C%2Fsvg%3E");
+  --marking-position: right center;
+}
+
+/* A cross-cut outfield. */
+[data-surface="cricket"] {
+  --league: #4f8a3c;
+  --mix-a: 46%;
+  --mix-b: 40%;
+  --unit: 30px;
+  --ground: repeating-conic-gradient(var(--ground-a) 0 25%, var(--ground-b) 0 50%) 0 0 / calc(var(--size) * 2) calc(var(--size) * 2);
+  --marking: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'120'%20height%3D'120'%20fill%3D'none'%20stroke%3D'%23f4f0e1'%20stroke-opacity%3D'.34'%20stroke-width%3D'1.5'%3E%3Cpath%20d%3D'M8%200a112%20112%200%200%200%20112%20112'%20stroke-dasharray%3D'.1%207'%20stroke-linecap%3D'round'%20stroke-width%3D'2.4'%2F%3E%3C%2Fsvg%3E");
+}
+
+/* Mown on the diagonal. */
+[data-surface="aussie-rules"] {
+  --league: #4f8a3c;
+  --mix-a: 46%;
+  --mix-b: 41%;
+  --unit: 26px;
+  --ground: repeating-linear-gradient(45deg, var(--ground-a) 0 var(--size), var(--ground-b) var(--size) calc(var(--size) * 2));
+  --marking: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'30'%20height%3D'60'%20fill%3D'none'%20stroke%3D'%23f4f0e1'%20stroke-opacity%3D'.34'%20stroke-width%3D'1.5'%3E%3Cpath%20d%3D'M30%209h-5M30%2023h-8M30%2037h-8M30%2051h-5'%20stroke-width%3D'2'%2F%3E%3Cpath%20d%3D'M30%2023H12v14h18'%2F%3E%3C%2Fsvg%3E");
+  --marking-position: right center;
+}
+
+/* Mown across the field, in bands like its ten-metre lines. The goal sits sideways, like the AFL's: an in-goal area with two posts on its line. */
+[data-surface="rugby"] {
+  --league: #4f8a3c;
+  --unit: 32px;
+  --ground: repeating-linear-gradient(0deg, var(--ground-a) 0 var(--size), var(--ground-b) var(--size) calc(var(--size) * 2));
+  --marking: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'20'%20height%3D'96'%20fill%3D'none'%20stroke%3D'%23f4f0e1'%20stroke-opacity%3D'.34'%20stroke-width%3D'1.5'%3E%3Cpath%20d%3D'M20%200H9v96h11'%2F%3E%3Ccircle%20cx%3D'9'%20cy%3D'38'%20r%3D'2.5'%20fill%3D'%23f4f0e1'%20fill-opacity%3D'.34'%20stroke%3D'none'%2F%3E%3Ccircle%20cx%3D'9'%20cy%3D'58'%20r%3D'2.5'%20fill%3D'%23f4f0e1'%20fill-opacity%3D'.34'%20stroke%3D'none'%2F%3E%3C%2Fsvg%3E");
+  --marking-position: right center;
+}
+
+/* Asphalt: nothing mown, just a dark surface with the league's colour in it. */
+[data-surface="track"] {
+  --league: #6b7280;
+  --base: #15161a;
+  --mix-a: 36%;
+  --mix-b: 30%;
+  --ground: linear-gradient(var(--ground-a), var(--ground-a));
+  --marking: url("data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'120'%20height%3D'120'%20fill%3D'none'%20stroke%3D'%23f4f0e1'%20stroke-opacity%3D'.34'%20stroke-width%3D'1.5'%3E%3Cpath%20d%3D'M8%200a112%20112%200%200%200%20112%20112'%20stroke-width%3D'5'%20stroke-dasharray%3D'8%208'%2F%3E%3C%2Fsvg%3E");
+}
+
+.league-card,
 .league-header {
-  --league: #3f8f6b;
-  background:
-    radial-gradient(85% 130% at 105% 15%, color-mix(in srgb, var(--league) 70%, transparent), transparent 70%),
-    linear-gradient(120deg, color-mix(in srgb, var(--league) 26%, transparent), transparent 65%),
-    var(--surface);
+  background: var(--ground);
 }
 
-/* A slim band of league colours along the top of every page. */
-body::before {
+.league-card::before,
+.league-header::before {
   content: "";
   position: absolute;
-  inset: 0 0 auto;
-  z-index: 30;
-  height: 3px;
-  background: linear-gradient(90deg, #7a2bf0, #1e90ff, #0fb5ae, #16a34a, var(--accent), #f97316, #e5007d);
+  inset: 6px;
+  border: 1.5px solid var(--chalk);
+  border-radius: 10px;
+  background: var(--marking, none) var(--marking-position, top right) / var(--marking-size, auto) no-repeat;
   pointer-events: none;
 }
 
-/* Soft colour behind the welcome, so the page opens with some life before the first card. */
-.hero-glow {
+/* Keeps the words above the markings. */
+.league-card > *,
+.league-header > * {
   position: relative;
 }
 
-/* As wide as the screen, so the colour fades out rather than stopping at the edge of the content. */
-.hero-glow::before {
+/* On a phone a goal or hoop sits above the big countdown, against the boundary like everywhere else. */
+.league-card-featured {
+  --scale: 1.4;
+}
+
+.league-card-featured:is([data-surface="court"], [data-surface="aussie-rules"], [data-surface="rugby"]) {
+  --marking-position: right top 40px;
+}
+
+@media (min-width: 768px) {
+  .league-card-featured:is([data-surface="court"], [data-surface="aussie-rules"], [data-surface="rugby"]) {
+    --marking-position: right center;
+  }
+}
+
+/* The top of the header only, clear of the date below it. */
+.league-header:is([data-surface="court"], [data-surface="aussie-rules"], [data-surface="rugby"]) {
+  --marking-position: right top 12px;
+}
+
+.league-tile {
+  --mix-a: 40%;
+  --mix-b: 30%;
+  --scale: 0.62;
+  background: var(--ground);
+}
+
+/* Rows carry a strip of their league's ground. */
+.group-row {
+  --scale: 0.3;
+  position: relative;
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.group-row::before {
   content: "";
   position: absolute;
-  top: -4rem;
-  bottom: -2rem;
-  left: 50%;
-  width: 100vw;
-  z-index: -1;
-  transform: translateX(-50%);
-  background:
-    radial-gradient(55% 45% at 15% 10%, rgb(200 240 74 / 0.16), transparent 70%),
-    radial-gradient(60% 50% at 95% 65%, rgb(122 43 240 / 0.28), transparent 70%);
-  pointer-events: none;
+  inset: 0 auto 0 0;
+  width: 14px;
+  background: var(--ground);
 }
 
 .rail {
@@ -161,16 +264,6 @@ body::before {
   height: 8px;
   border-radius: 9999px;
   background: var(--relegation);
-  animation: live-pulse 1.6s ease-out infinite;
-}
-
-@keyframes live-pulse {
-  0% {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--relegation) 70%, transparent);
-  }
-  100% {
-    box-shadow: 0 0 0 8px transparent;
-  }
 }
 
 /* Only the handle claims touches, so swiping a row still scrolls the page. */
@@ -220,7 +313,6 @@ dialog::backdrop {
 @media (prefers-reduced-motion: reduce) {
   .sheet[open],
   .pop,
-  .live-dot,
   .badge-marquee-track {
     animation: none;
   }

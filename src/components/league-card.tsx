@@ -8,43 +8,36 @@ import {
   crowdLine,
   leaderLine,
   playerCountLine,
-  sportIcon,
   type DirectoryRow,
   type ListedLeague,
 } from "@/lib/directory-rows";
-import { accentStyle, toTeam } from "@/lib/leagues";
+import { accentStyle, surfaceFor, toTeam } from "@/lib/leagues";
 
 const MIN_MARQUEE_BADGES = 12;
 
 export function StatePill({ state }: { state: "open" | "live" | "finished" }) {
   if (state === "open") {
     return (
-      <span className="rounded-full bg-accent px-2.5 py-0.5 text-xs font-bold tracking-wide text-accent-ink uppercase">
+      <span className="poster shrink-0 -rotate-3 rounded-md bg-accent px-2 py-0.5 text-sm leading-tight text-accent-ink">
         Open
       </span>
     );
   }
   if (state === "live") {
     return (
-      <span className="flex items-center gap-1.5 rounded-full bg-black/45 px-2.5 py-0.5 text-xs font-bold tracking-wide uppercase">
+      <span className="poster flex shrink-0 items-center gap-1.5 rounded-md bg-background/75 px-2 py-0.5 text-sm leading-tight">
         <span className="live-dot" aria-hidden="true" />
         Live
       </span>
     );
   }
   return (
-    <span className="rounded-full bg-black/45 px-2.5 py-0.5 text-xs font-bold tracking-wide uppercase">Finished</span>
+    <span className="poster shrink-0 rounded-md bg-background/75 px-2 py-0.5 text-sm leading-tight">Finished</span>
   );
 }
 
 function SportLabel({ sport }: { sport: string }) {
-  const icon = sportIcon(sport);
-  return (
-    <span className="truncate text-sm font-semibold text-white/85">
-      {icon && <span aria-hidden="true">{icon} </span>}
-      {sport}
-    </span>
-  );
+  return <span className="truncate text-sm font-semibold text-foreground/90">{sport}</span>;
 }
 
 function BadgeStrip({ league }: { league: ListedLeague }) {
@@ -57,7 +50,7 @@ function BadgeStrip({ league }: { league: ListedLeague }) {
           <TeamBadge team={toTeam({ ...badge, id: badge.name })} />
         </span>
       ))}
-      {others > 0 && <span className="ml-1.5 text-sm font-semibold text-muted">+{others}</span>}
+      {others > 0 && <span className="ml-1.5 text-sm font-semibold text-foreground/90">+{others}</span>}
     </span>
   );
 }
@@ -70,7 +63,7 @@ function actionLabel(state: ListedLeague["state"]) {
 function CardAction({ league }: { league: ListedLeague }) {
   return (
     <JoinedOr leagueId={league.league_id}>
-      <span className="font-semibold text-accent">
+      <span className="font-semibold text-accent-on-turf">
         {actionLabel(league.state)} <span aria-hidden="true">→</span>
       </span>
     </JoinedOr>
@@ -87,13 +80,13 @@ function CardFacts({ league }: { league: ListedLeague }) {
     return (
       <>
         {leader && <span className="block font-semibold">{leader}</span>}
-        {crowd && <span className="block text-sm text-muted">{crowd}</span>}
-        {players && <span className="block text-sm text-muted">{players}</span>}
+        {crowd && <span className="block text-sm text-foreground/90">{crowd}</span>}
+        {players && <span className="block text-sm text-foreground/90">{players}</span>}
       </>
     );
   }
   return (
-    <span className="block text-sm text-muted">
+    <span className="block text-sm text-foreground/90">
       {league.state === "open"
         ? "Early days: get your table in"
         : league.state === "live"
@@ -116,7 +109,8 @@ function CardFrame({
     <Link
       href={`/leagues/${league.slug}`}
       style={accentStyle(league.accent)}
-      className={`league-card relative flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 transition-transform active:scale-[0.985] md:hover:-translate-y-0.5 ${className}`}
+      data-surface={surfaceFor(league.sport)}
+      className={`league-card relative flex h-full flex-col overflow-hidden rounded-2xl transition-[transform,filter] active:scale-[0.985] md:hover:brightness-110 ${className}`}
     >
       {children}
     </Link>
@@ -132,11 +126,11 @@ export function LeagueCard({ league }: { league: ListedLeague }) {
           <SportLabel sport={league.sport} />
         </span>
         {league.state === "open" && (
-          <TimeLeft iso={league.deadline} className="shrink-0 rounded-full bg-black/55 px-2.5 py-0.5 text-sm font-bold tabular-nums" />
+          <TimeLeft iso={league.deadline} className="shrink-0 text-sm font-bold tabular-nums" />
         )}
       </span>
-      <h3 className="mt-3 font-display text-4xl leading-none font-bold break-words">{league.competition_name}</h3>
-      <span className="mt-1 text-sm text-white/85">
+      <h3 className="poster mt-3 text-4xl leading-none break-words">{league.competition_name}</h3>
+      <span className="mt-1 text-sm text-foreground/90">
         {league.season_label} · {league.team_count} teams
       </span>
       <span className="mt-3">
@@ -147,7 +141,7 @@ export function LeagueCard({ league }: { league: ListedLeague }) {
       </span>
       <span className="mt-3 flex items-center justify-between gap-2 text-sm">
         {league.state === "open" ? (
-          <span className="text-muted">
+          <span className="text-foreground/90">
             Locks <LocalTime iso={league.deadline} dateOnly />
           </span>
         ) : (
@@ -162,17 +156,17 @@ export function LeagueCard({ league }: { league: ListedLeague }) {
 // The next league to lock, given the most room because it's the most urgent thing on the page.
 export function FeaturedLeagueCard({ league }: { league: ListedLeague }) {
   return (
-    <CardFrame league={league} className="p-5">
+    <CardFrame league={league} className="league-card-featured p-5">
       <span className="flex items-center justify-between gap-2">
-        <span className="text-xs font-bold tracking-widest text-white/85 uppercase">Locks next</span>
+        <span className="poster text-foreground/90">Locks next</span>
         <StatePill state={league.state} />
       </span>
-      <h3 className="mt-3 font-display text-5xl leading-none font-bold break-words">{league.competition_name}</h3>
-      <span className="mt-1 text-white/85">
+      <h3 className="poster mt-3 text-5xl leading-none break-words">{league.competition_name}</h3>
+      <span className="mt-1 text-foreground/90">
         {league.season_label} · {league.team_count} teams
       </span>
-      <TimeLeft iso={league.deadline} className="mt-4 font-display text-[3.75rem] leading-none font-bold text-accent tabular-nums" />
-      <span className="mt-1 text-sm text-white/85">
+      <TimeLeft iso={league.deadline} className="poster mt-4 text-[clamp(2.75rem,15vw,3.75rem)] leading-none text-accent-on-turf normal-case tabular-nums" />
+      <span className="mt-1 text-sm text-foreground/90">
         Predictions lock <LocalTime iso={league.deadline} />
       </span>
       <span className="mt-4">
@@ -181,7 +175,7 @@ export function FeaturedLeagueCard({ league }: { league: ListedLeague }) {
       <span className="mt-3">
         <CardFacts league={league} />
       </span>
-      <span className="mt-4 flex h-13 items-center justify-center rounded-lg bg-accent font-display text-xl font-bold text-accent-ink md:max-w-sm">
+      <span className="poster mt-4 flex h-13 items-center justify-center rounded-xl bg-accent-on-turf text-xl text-accent-ink md:max-w-sm">
         <JoinedOr leagueId={league.league_id} className="">
           <>
             Make your prediction <span aria-hidden="true">&nbsp;→</span>
@@ -213,17 +207,12 @@ export function BadgeMarquee({ rows }: { rows: DirectoryRow[] }) {
 
 // There's no league page yet, so this says what's coming rather than linking anywhere.
 function ComingSoonTile({ row }: { row: DirectoryRow }) {
-  const icon = sportIcon(row.sport);
   return (
     <div
       style={accentStyle(row.accent)}
-      className="league-tile flex h-full min-h-12 items-center gap-2 rounded-xl border border-white/10 px-3 py-2"
+      data-surface={surfaceFor(row.sport)}
+      className="league-tile flex h-full min-h-12 items-center rounded-xl border border-chalk px-3 py-2"
     >
-      {icon && (
-        <span aria-hidden="true" className="text-sm">
-          {icon}
-        </span>
-      )}
       <span className="font-display text-xl leading-tight font-bold">{row.competition_name}</span>
     </div>
   );

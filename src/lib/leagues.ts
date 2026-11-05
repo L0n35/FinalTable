@@ -146,6 +146,31 @@ export function accentStyle(accent: string | null | undefined): CSSProperties | 
   return accent ? ({ "--league": accent } as CSSProperties) : undefined;
 }
 
+export type Surface = "football" | "court" | "cricket" | "aussie-rules" | "rugby" | "track" | "plain";
+
+const SURFACES: Record<string, Surface> = {
+  football: "football",
+  soccer: "football",
+  basketball: "court",
+  cricket: "cricket",
+  "aussie rules": "aussie-rules",
+  "australian rules": "aussie-rules",
+  rugby: "rugby",
+  "rugby league": "rugby",
+  "rugby union": "rugby",
+  motorsport: "track",
+  "formula 1": "track",
+  f1: "track",
+  motogp: "track",
+  indycar: "track",
+  nascar: "track",
+};
+
+// The ground a league plays on. Group creators can type any sport, so anything else gets a plain one.
+export function surfaceFor(sport: string | null | undefined): Surface {
+  return SURFACES[(sport ?? "").trim().toLowerCase()] ?? "plain";
+}
+
 // A league playing an official season that isn't the official league itself.
 export function isPresetLeague(league: Pick<LeagueRow, "type" | "competition_id">): boolean {
   return league.type !== "official" && league.competition_id !== null;

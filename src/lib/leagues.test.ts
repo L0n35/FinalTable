@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { initialsFor, zoneProblem } from "@/lib/leagues";
+import { initialsFor, surfaceFor, zoneProblem } from "@/lib/leagues";
 import { zoneFor } from "@/lib/zones";
 
 describe("initialsFor", () => {
@@ -10,6 +10,31 @@ describe("initialsFor", () => {
     ["", "?"],
   ])("turns %j into %s", (name, expected) => {
     expect(initialsFor(name)).toBe(expected);
+  });
+});
+
+describe("surfaceFor", () => {
+  it.each([
+    ["Football", "football"],
+    ["Basketball", "court"],
+    ["Cricket", "cricket"],
+    ["Aussie rules", "aussie-rules"],
+    ["Rugby league", "rugby"],
+    ["Motorsport", "track"],
+    ["Formula 1", "track"],
+  ])("puts %s on the %s surface", (sport, surface) => {
+    expect(surfaceFor(sport)).toBe(surface);
+  });
+
+  it("ignores case and spare spaces, because group creators type the sport themselves", () => {
+    expect(surfaceFor("  football ")).toBe("football");
+    expect(surfaceFor("F1")).toBe("track");
+  });
+
+  it("gives anything it doesn't know a plain ground", () => {
+    expect(surfaceFor("squash")).toBe("plain");
+    expect(surfaceFor("")).toBe("plain");
+    expect(surfaceFor(null)).toBe("plain");
   });
 });
 

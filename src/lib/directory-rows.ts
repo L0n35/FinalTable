@@ -56,18 +56,6 @@ export type PublicGroup = {
 
 const MIN_PLAYERS_SHOWN = 10;
 
-const SPORT_ICONS: Record<string, string> = {
-  Football: "⚽",
-  Basketball: "🏀",
-  Cricket: "🏏",
-  "Aussie rules": "🏉",
-  "Rugby league": "🏉",
-};
-
-export function sportIcon(sport: string): string | null {
-  return SPORT_ICONS[sport] ?? null;
-}
-
 function isListed(row: DirectoryRow): row is ListedLeague {
   return row.state !== "coming_soon";
 }

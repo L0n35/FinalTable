@@ -4,7 +4,7 @@ export function ExploreHeading({ current }: { current: "leagues" | "groups" }) {
   return (
     <>
       <div>
-        <h1 className="font-display text-6xl leading-none font-bold tracking-tight uppercase">Explore</h1>
+        <h1 className="poster text-6xl leading-none tracking-tight">Explore</h1>
         <p className="mt-1 text-lg text-muted">Pick a league. Call the table. See who was right.</p>
       </div>
       <TabNav
