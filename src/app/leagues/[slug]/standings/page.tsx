@@ -5,6 +5,7 @@ import { PageFallback } from "@/components/page-fallback";
 import { PageShell } from "@/components/page-shell";
 import { StandingsLoader } from "@/components/standings-loader";
 import { getSession, isCurrentUserAdmin } from "@/lib/auth";
+import { DIVISION_COLUMNS, type Division } from "@/lib/divisions";
 import {
   isLocked,
   LEAGUE_COLUMNS,
@@ -36,8 +37,9 @@ async function Standings({ params }: { params: Promise<{ slug: string }> }) {
   const canUpdate = isCreatorOfCustom || (await isCurrentUserAdmin(session));
   if (!canUpdate || league.status !== "published" || !isLocked(league)) redirect(leaguePath);
 
-  const [{ data: teams }, { data: latest }] = await Promise.all([
+  const [{ data: teams }, { data: divisions }, { data: latest }] = await Promise.all([
     supabase.from("teams").select(TEAM_COLUMNS).eq("season_id", league.season_id),
+    supabase.from("divisions").select(DIVISION_COLUMNS).eq("season_id", league.season_id).order("position"),
     supabase
       .from("standings_updates")
       .select("version, team_order")
@@ -55,6 +57,7 @@ async function Standings({ params }: { params: Promise<{ slug: string }> }) {
       leagueName={league.name}
       leaguePath={leaguePath}
       teams={((teams ?? []) as TeamRow[]).map(toTeam)}
+      divisions={(divisions ?? []) as Division[]}
       zones={zonesOf(league)}
       saved={(latest?.team_order as string[] | undefined) ?? null}
       note={

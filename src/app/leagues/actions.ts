@@ -57,6 +57,7 @@ const MESSAGES: Record<string, string> = {
   team_count_out_of_range: "A table needs between 4 and 40 teams.",
   duplicate_team_name: "Each team needs a different name.",
   invalid_teams: "Something about those teams wasn't valid. Please check and try again.",
+  team_needs_division: "This league is split into conferences, so a new team has to be added with SQL for now. You can still rename teams here.",
   not_authenticated: "Please sign in first.",
   deadline_passed: "Predictions have closed.",
   league_not_open: "This isn't open for predictions.",

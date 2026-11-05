@@ -7,6 +7,7 @@ import {
   playerCountLine,
   sportsIn,
   splitDirectory,
+  teamsLine,
   type DirectoryRow,
 } from "@/lib/directory-rows";
 import { formatShortDate, timeLeft } from "@/lib/leagues";
@@ -99,6 +100,16 @@ describe("card lines", () => {
 
   it("explains the crowd's pick in plain words", () => {
     expect(crowdLine(row({ crowd_team: "Arsenal", crowd_percent: 40 }))).toBe("40% picked Arsenal to finish top");
+    expect(
+      crowdLine(
+        row({
+          crowd_picks: [
+            { division: "East", team: "Inter Miami", percent: 40 },
+            { division: "West", team: "LAFC", percent: 35 },
+          ],
+        }),
+      ),
+    ).toBe("To finish top: Inter Miami 40%, LAFC 35%");
     expect(crowdLine(row({}))).toBeNull();
   });
 
@@ -115,6 +126,19 @@ describe("card lines", () => {
   it("counts a single player correctly", () => {
     expect(playerCountLabel(1)).toBe("1 player");
     expect(playerCountLabel(17)).toBe("17 players");
+  });
+});
+
+describe("teamsLine", () => {
+  it("gives the season and team count", () => {
+    expect(teamsLine({ season_label: "2027", team_count: 18 })).toBe("2027 · 18 teams");
+    expect(teamsLine({ season_label: "2027", team_count: 18, division_names: null })).toBe("2027 · 18 teams");
+  });
+
+  it("names a league's conferences", () => {
+    expect(teamsLine({ season_label: "2027 Sprint", team_count: 30, division_names: ["East", "West"] })).toBe(
+      "2027 Sprint · 30 teams · East and West",
+    );
   });
 });
 

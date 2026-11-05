@@ -37,6 +37,7 @@ export type TeamRow = {
   logo_path: string | null;
   colour_primary: string;
   colour_secondary: string;
+  division_id?: string | null;
 };
 
 // A row of league_leaderboard. Points and ranks are empty until the first standings update.
@@ -59,6 +60,7 @@ export type Team = {
   primary: string;
   secondary: string;
   logoUrl?: string | null;
+  divisionId?: string | null;
 };
 
 export type Zones = {
@@ -74,7 +76,7 @@ export type Zones = {
 
 export const LEAGUE_COLUMNS =
   "id, slug, join_code, type, name, created_by, hidden_at, season_id, team_count, deadline, promotion_count, playoff_from, playoff_to, relegation_count, status, competition_id, competition_name, season_label, sport, promotion_label, playoff_label, relegation_label, competition_accent";
-export const TEAM_COLUMNS = "id, name, short_name, logo_path, colour_primary, colour_secondary";
+export const TEAM_COLUMNS = "id, name, short_name, logo_path, colour_primary, colour_secondary, division_id";
 
 export const MIN_TEAMS = 4;
 export const MAX_TEAMS = 40;
@@ -114,6 +116,7 @@ export function toTeam(row: TeamRow): Team {
     primary: row.colour_primary,
     secondary: row.colour_secondary,
     logoUrl: row.logo_path ? logoUrl(row.logo_path) : null,
+    divisionId: row.division_id ?? null,
   };
 }
 
@@ -139,6 +142,11 @@ export function leagueNoun(league: Pick<LeagueRow, "type" | "competition_id">): 
 export function leagueTypeLabel(league: Pick<LeagueRow, "type" | "competition_id">): string {
   if (league.type === "official") return "Global league";
   return `${league.type === "public" ? "Public" : "Private"} ${leagueNoun(league)}`;
+}
+
+// MLS East and West became one league, so their old links lead to it. These have a random ending.
+export function mergedLeagueSlug(slug: string): string | null {
+  return /^mls-(east|west)-2027-sprint-/.test(slug) ? "mls-2027-sprint" : null;
 }
 
 export type StartKind = "preset" | "custom" | "official";

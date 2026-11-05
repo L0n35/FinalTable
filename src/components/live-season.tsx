@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { LeagueTable } from "@/components/league-table";
+import { LeagueTables } from "@/components/league-tables";
 import { LocalTime } from "@/components/local-time";
 import { ScoringNote } from "@/components/scoring-note";
 import { SeasonControl } from "@/components/season-control";
 import { TabNav } from "@/components/tab-nav";
-import { ZoneLegend } from "@/components/zone-legend";
 import type { Session } from "@/lib/auth";
+import { positionsIn, tableSizes, type Division } from "@/lib/divisions";
 import {
   initialsFor,
   leagueNoun,
@@ -25,6 +25,7 @@ type LiveSeasonProps = {
   session: Session;
   league: LeagueRow;
   teams: Team[];
+  divisions: Division[];
   // The viewer's own table, when it counts.
   ownOrder: string[] | null;
   canUpdate: boolean;
@@ -151,16 +152,11 @@ function PositionNote({ label, position, exact }: { label: string; position: num
   );
 }
 
-// Teams listed by the given order. A team missing from the season can't appear in a saved table.
-function teamsInOrder(order: string[], teams: Team[]) {
-  const byId = new Map(teams.map((team) => [team.id, team]));
-  return order.map((id) => byId.get(id)).filter((team) => team !== undefined);
-}
-
 export async function LiveSeason({
   session,
   league,
   teams,
+  divisions,
   ownOrder,
   canUpdate,
   canReopen,
@@ -264,7 +260,7 @@ export async function LiveSeason({
         )}
         <Pager path={path} tab="leaderboard" page={view.page} total={rows[0]?.entry_count ?? 0} />
         {updatedLine}
-        <ScoringNote league={league} />
+        <ScoringNote league={league} tableSizes={tableSizes(teams, divisions)} />
       </div>
     );
   }
@@ -277,32 +273,30 @@ export async function LiveSeason({
           {ownOrder && (
             <section aria-label="Your prediction">
               <h2 className="mt-2 mb-2 font-display text-xl font-bold">Your prediction</h2>
-              <ZoneLegend zones={zones} total={teams.length} />
-              <LeagueTable teams={teamsInOrder(ownOrder, teams)} zones={zones} />
+              <LeagueTables order={ownOrder} teams={teams} divisions={divisions} zones={zones} />
             </section>
           )}
         </div>
       );
     }
+    const ownPositions = ownOrder ? positionsIn(ownOrder, teams, divisions) : null;
     return (
       <div className="flex flex-col gap-2">
         {updatedLine}
         {league.competition_id && league.type !== "official" && (
           <p className="text-sm text-muted">Updates automatically from the global league.</p>
         )}
-        <ZoneLegend zones={zones} total={teams.length} />
-        <LeagueTable
-          teams={teamsInOrder(actualOrder, teams)}
+        <LeagueTables
+          order={actualOrder}
+          teams={teams}
+          divisions={divisions}
           zones={zones}
           aside={
-            ownOrder
-              ? (team, position) => (
-                  <PositionNote
-                    label="You"
-                    position={ownOrder.indexOf(team.id) + 1}
-                    exact={ownOrder[position - 1] === team.id}
-                  />
-                )
+            ownPositions
+              ? (team, position) => {
+                  const own = ownPositions.get(team.id) ?? 0;
+                  return <PositionNote label="You" position={own} exact={own === position} />;
+                }
               : undefined
           }
         />
@@ -348,6 +342,7 @@ export async function LiveSeason({
           </div>
         );
       }
+      const actualPositions = actualOrder ? positionsIn(actualOrder, teams, divisions) : null;
       return (
         <div className="flex flex-col gap-2">
           {back}
@@ -359,19 +354,17 @@ export async function LiveSeason({
               {ordinal(row.rank)} · {points(row)} · {row.exact_count} exact
             </p>
           )}
-          <ZoneLegend zones={zones} total={teams.length} />
-          <LeagueTable
-            teams={teamsInOrder(order, teams)}
+          <LeagueTables
+            order={order}
+            teams={teams}
+            divisions={divisions}
             zones={zones}
             aside={
-              actualOrder
-                ? (team, position) => (
-                    <PositionNote
-                      label="Now"
-                      position={actualOrder.indexOf(team.id) + 1}
-                      exact={actualOrder[position - 1] === team.id}
-                    />
-                  )
+              actualPositions
+                ? (team, position) => {
+                    const now = actualPositions.get(team.id) ?? 0;
+                    return <PositionNote label="Now" position={now} exact={now === position} />;
+                  }
                 : undefined
             }
           />

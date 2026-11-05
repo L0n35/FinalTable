@@ -4,8 +4,8 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { updateStandings } from "@/app/leagues/actions";
-import { RankingList } from "@/components/ranking-list";
-import { ZoneLegend } from "@/components/zone-legend";
+import { ActiveRanking, TableTabs, useActiveTable } from "@/components/ranking-tables";
+import { groupedOrder, type Division } from "@/lib/divisions";
 import type { Team, Zones } from "@/lib/leagues";
 import { sameOrder, useRanking } from "@/lib/use-ranking";
 
@@ -14,6 +14,7 @@ type StandingsEditorProps = {
   leagueName: string;
   leaguePath: string;
   teams: Team[];
+  divisions: Division[];
   zones: Zones;
   // Empty until the first update, when the table starts in alphabetical order.
   saved: string[] | null;
@@ -25,6 +26,7 @@ export function StandingsEditor({
   leagueName,
   leaguePath,
   teams,
+  divisions,
   zones,
   saved,
   note,
@@ -32,8 +34,13 @@ export function StandingsEditor({
   const router = useRouter();
   const teamsById = useMemo(() => new Map(teams.map((team) => [team.id, team])), [teams]);
   const startOrder = useMemo(
-    () => saved ?? [...teams].sort((a, b) => a.name.localeCompare(b.name)).map((team) => team.id),
-    [saved, teams],
+    () =>
+      groupedOrder(
+        saved ?? [...teams].sort((a, b) => a.name.localeCompare(b.name)).map((team) => team.id),
+        teams,
+        divisions,
+      ),
+    [saved, teams, divisions],
   );
   const { order, selectedId, setSelectedId, announcement, canUndo, changeOrder, place, undo, reset } =
     useRanking({
@@ -42,6 +49,7 @@ export function StandingsEditor({
       resetMessage: "Back to the last saved table.",
       nameOf: (id) => teamsById.get(id)?.name ?? "Team",
     });
+  const { tables, active, show } = useActiveTable(order, teams, divisions, () => setSelectedId(null));
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -94,18 +102,19 @@ export function StandingsEditor({
             </button>
           </div>
         </div>
+        <TableTabs tables={tables} active={active} onShow={show} />
       </header>
 
       <main className="px-4 pt-3 pb-32">
-        <ZoneLegend zones={zones} total={order.length} />
-        <RankingList
-          teams={teams}
+        <ActiveRanking
+          active={active}
           order={order}
+          teams={teams}
           zones={zones}
           selectedId={selectedId}
           onSelect={setSelectedId}
-          onDrop={changeOrder}
-          onPlace={place}
+          changeOrder={changeOrder}
+          place={place}
         />
         <p className="mt-4 text-center text-sm text-muted">{note}</p>
       </main>

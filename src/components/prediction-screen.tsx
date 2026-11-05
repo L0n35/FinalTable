@@ -3,13 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { CalendarLinks } from "@/components/calendar-links";
-import { LeagueTable } from "@/components/league-table";
-import { RankingList } from "@/components/ranking-list";
+import { LeagueTables } from "@/components/league-tables";
+import { ActiveRanking, TableTabs, useActiveTable } from "@/components/ranking-tables";
 import { Sheet } from "@/components/sheet";
 import { TeamBadge } from "@/components/team-badge";
-import { ZoneLegend } from "@/components/zone-legend";
 import { copyText } from "@/lib/browser-utils";
 import type { League } from "@/lib/demo-league";
+import { groupedOrder, listNames, tablesOf, type Division } from "@/lib/divisions";
 import { timeLeft } from "@/lib/leagues";
 import {
   clearSavedOrder,
@@ -19,6 +19,8 @@ import {
   writeSavedOrder,
 } from "@/lib/saved-order";
 import { buzz, sameOrder, useRanking } from "@/lib/use-ranking";
+
+const NO_DIVISIONS: Division[] = [];
 
 export type SavePrediction = (
   leagueId: string,
@@ -57,12 +59,18 @@ export function PredictionScreen({
   const draftKey = `final-table:draft:${scope}`;
   const submittedKey = `final-table:submitted:${scope}`;
 
+  const divisions = league.divisions ?? NO_DIVISIONS;
+  // Keeps each conference's teams together, so a table is always one unbroken block of the order.
+  const grouped = (ids: string[]) => groupedOrder(ids, league.teams, divisions);
+
   const alphabetical = useMemo(
     () =>
-      [...league.teams]
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .map((team) => team.id),
-    [league.teams],
+      groupedOrder(
+        [...league.teams].sort((a, b) => a.name.localeCompare(b.name)).map((team) => team.id),
+        league.teams,
+        divisions,
+      ),
+    [league.teams, divisions],
   );
   const teamsById = useMemo(
     () => new Map(league.teams.map((team) => [team.id, team])),
@@ -71,21 +79,22 @@ export function PredictionScreen({
 
   const [submitted, setSubmitted] = useState(() => {
     if (!save) return readSavedOrder(submittedKey, alphabetical);
-    return initialSubmitted && !needsReview ? initialSubmitted : null;
+    return initialSubmitted && !needsReview ? grouped(initialSubmitted) : null;
   });
   const nameOf = (id: string) => teamsById.get(id)?.name ?? "Team";
   const { order, selectedId, setSelectedId, announcement, canUndo, changeOrder, place, undo, reset } =
     useRanking({
       initial: () => {
         const draft = readSavedOrder(draftKey, alphabetical);
-        if (draft && !(submittedAt && isSavedOrderOlderThan(draftKey, submittedAt))) return draft;
+        if (draft && !(submittedAt && isSavedOrderOlderThan(draftKey, submittedAt))) return grouped(draft);
         if (submitted) return submitted;
-        return initialSubmitted ? reconcileOrder(initialSubmitted, alphabetical) : alphabetical;
+        return initialSubmitted ? grouped(reconcileOrder(initialSubmitted, alphabetical)) : alphabetical;
       },
       resetTo: alphabetical,
       resetMessage: "Reset to alphabetical order.",
       nameOf,
     });
+  const { tables, active, show } = useActiveTable(order, league.teams, divisions, () => setSelectedId(null));
   const [sheet, setSheet] = useState<"confirm" | "success" | null>(null);
   const [copied, setCopied] = useState(false);
   const [now, setNow] = useState(() => Date.now());
@@ -164,12 +173,18 @@ export function PredictionScreen({
 
   const isSubmitted = sameOrder(order, submitted);
   const isAlphabetical = sameOrder(order, alphabetical);
-  const champion = teamsById.get(order[0]);
+  const alphabeticalTables = tablesOf(alphabetical, league.teams, divisions);
+  const isUntouched = (table: (typeof tables)[number]) =>
+    sameOrder(table.order, alphabeticalTables[tables.indexOf(table)]?.order ?? null);
+  const untouched = tables.filter(isUntouched);
+  const untouchedNames = listNames(untouched.flatMap((table) => (table.division ? [table.division.name] : [])));
+  const topPicks = tables.flatMap((table) => {
+    const team = teamsById.get(table.order[0]);
+    return team ? [{ division: table.division, team }] : [];
+  });
 
   if (closedByServer || now >= deadline.getTime()) {
-    const finalOrder = (submitted ?? [])
-      .map((id) => teamsById.get(id))
-      .filter((team) => team !== undefined);
+    const finalOrder = submitted ?? [];
     return (
       <main className="mx-auto flex w-full max-w-lg flex-col gap-4 px-4 pt-[max(16px,env(safe-area-inset-top))] pb-10">
         <div>
@@ -188,7 +203,9 @@ export function PredictionScreen({
             Go back
           </Link>
         )}
-        {finalOrder.length > 0 && <LeagueTable teams={finalOrder} zones={league.zones} />}
+        {finalOrder.length > 0 && (
+          <LeagueTables order={finalOrder} teams={league.teams} divisions={divisions} zones={league.zones} />
+        )}
       </main>
     );
   }
@@ -232,6 +249,7 @@ export function PredictionScreen({
             </button>
           </div>
         </div>
+        <TableTabs tables={tables} active={active} onShow={show} isDone={(table) => !isUntouched(table)} />
       </header>
 
       <main className="px-4 pt-3 pb-32">
@@ -240,16 +258,15 @@ export function PredictionScreen({
             The teams have changed. Check your table, then submit it again to stay in the running.
           </p>
         )}
-        <ZoneLegend zones={league.zones} total={order.length} />
-
-        <RankingList
-          teams={league.teams}
+        <ActiveRanking
+          active={active}
           order={order}
+          teams={league.teams}
           zones={league.zones}
           selectedId={selectedId}
           onSelect={setSelectedId}
-          onDrop={changeOrder}
-          onPlace={place}
+          changeOrder={changeOrder}
+          place={place}
         />
 
         <p className="mt-4 text-center text-sm text-muted">Locks {deadlineLabel}</p>
@@ -282,7 +299,7 @@ export function PredictionScreen({
               <button
                 type="button"
                 disabled={isSubmitted || isSaving}
-                onClick={() => (isAlphabetical ? setSheet("confirm") : submit())}
+                onClick={() => (untouched.length > 0 ? setSheet("confirm") : submit())}
                 className="h-13 w-full rounded-lg bg-accent font-display text-xl font-bold text-accent-ink disabled:bg-surface-raised disabled:text-muted"
               >
                 {isSaving
@@ -307,14 +324,22 @@ export function PredictionScreen({
         label="Submit in alphabetical order?"
         onClose={() => setSheet((current) => (current === "confirm" ? null : current))}
       >
-        <h2 className="font-display text-2xl font-bold">Still in alphabetical order</h2>
+        <h2 className="font-display text-2xl font-bold">
+          {untouchedNames ? `${untouchedNames} still in alphabetical order` : "Still in alphabetical order"}
+        </h2>
         <p className="mt-1 text-muted">
-          You haven&apos;t moved any teams yet. Submit this table anyway?
+          {untouchedNames
+            ? `You haven't moved any ${untouchedNames} teams yet. Submit your prediction anyway?`
+            : "You haven't moved any teams yet. Submit this table anyway?"}
         </p>
         <div className="mt-4 grid grid-cols-2 gap-3">
           <button
             type="button"
-            onClick={() => setSheet(null)}
+            onClick={() => {
+              setSheet(null);
+              const first = untouched[0]?.division;
+              if (first) show(first.id);
+            }}
             className="h-12 rounded-lg border border-line font-semibold"
           >
             Keep editing
@@ -341,15 +366,15 @@ export function PredictionScreen({
           ✓
         </div>
         <h2 className="mt-3 text-center font-display text-3xl font-bold">You&apos;re in!</h2>
-        {champion && (
-          <div className="mt-3 flex items-center justify-center gap-3">
-            <TeamBadge team={champion} />
+        {topPicks.map(({ division, team }) => (
+          <div key={team.id} className="mt-3 flex items-center justify-center gap-3">
+            <TeamBadge team={team} />
             <p>
-              <span className="block text-sm text-muted">Your top pick</span>
-              <span className="font-semibold">{champion.name}</span>
+              <span className="block text-sm text-muted">Your top pick{division ? `, ${division.name}` : ""}</span>
+              <span className="font-semibold">{team.name}</span>
             </p>
           </div>
-        )}
+        ))}
         <p className="mt-3 text-center text-sm text-muted">
           You can change your prediction until {deadlineLabel}.
         </p>

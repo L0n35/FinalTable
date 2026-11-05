@@ -14,7 +14,6 @@
 
 - Ads, payments, paid entry and prizes
 - Playoff winner or bracket predictions
-- Conferences (one league has one table, so NBA and MLS are each two leagues, East and West)
 - Automatic results from a sports API
 - Email or Apple login
 - Email reminders (see section 13)
@@ -63,6 +62,16 @@ Public and private leagues can be **custom**, with their own teams and table, or
 - Every published official season is automatically available as a preset until its deadline. After that it disappears from the preset list.
 - A new season can copy teams, logos and zones from the previous one, ready for the admin to swap promoted and relegated teams.
 - A preset league's creator chooses only its name and privacy. Teams, zones, deadline and standings come from the official season, so an admin's update reaches every league on that season immediately.
+
+### Conferences
+
+Some leagues split their teams into conferences, such as MLS and the NBA. People pick the league once and rank each conference as its own table.
+
+- **One prediction, one leaderboard:** a prediction is still one list of every team, and a conference's table is that list filtered to its teams. A season with no conferences works exactly as it did.
+- **Scoring:** each conference is scored as its own table using the season's zones, and the points are added up. That means a first-place bonus in each, and zones such as "top 8" apply in each.
+- **Ranking:** a team can't be moved across conferences. Submitting with a conference still in alphabetical order gets a warning that names it.
+- **The crowd's pick** is given for each conference, under the same rules as a single table.
+- **Setting up:** conferences are added with SQL for now, and a copied season keeps them. The wizard can rename a team in a split league but not add one. Custom leagues can't have conferences yet.
 
 ### Guest players
 

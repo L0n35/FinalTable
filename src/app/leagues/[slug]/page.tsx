@@ -1,7 +1,7 @@
 import { cache, Suspense } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { CalendarLinks } from "@/components/calendar-links";
 import { JoinButton } from "@/components/join-button";
 import { LiveSeason, readLiveView } from "@/components/live-season";
@@ -14,6 +14,7 @@ import { ScoringNote } from "@/components/scoring-note";
 import { SharePanel } from "@/components/share-panel";
 import { TeamGrid } from "@/components/team-grid";
 import { getSession, isCurrentUserAdmin } from "@/lib/auth";
+import { DIVISION_COLUMNS, tableSizes, type Division } from "@/lib/divisions";
 import {
   accentStyle,
   isLocked,
@@ -21,6 +22,7 @@ import {
   LEAGUE_COLUMNS,
   leagueNoun,
   leagueTypeLabel,
+  mergedLeagueSlug,
   seasonTitle,
   surfaceFor,
   TEAM_COLUMNS,
@@ -60,10 +62,15 @@ async function League({
   const { supabase, userId } = session;
 
   const league = await readLeague(slug);
-  if (!league) notFound();
+  if (!league) {
+    const merged = mergedLeagueSlug(slug);
+    if (merged) redirect(`/leagues/${merged}`);
+    notFound();
+  }
 
-  const [{ data: teamRowsData }, membership, ownPrediction, isAdmin] = await Promise.all([
+  const [{ data: teamRowsData }, { data: divisionRows }, membership, ownPrediction, isAdmin] = await Promise.all([
     supabase.from("teams").select(TEAM_COLUMNS).eq("season_id", league.season_id),
+    supabase.from("divisions").select(DIVISION_COLUMNS).eq("season_id", league.season_id).order("position"),
     userId
       ? supabase
           .from("memberships")
@@ -87,6 +94,8 @@ async function League({
   const teams = teamRows
     .map(toTeam)
     .sort((a, b) => a.name.localeCompare(b.name));
+  const divisions = (divisionRows ?? []) as Division[];
+  const zoneLines = describeZones(zonesOf(league));
   const role = membership.data?.role as string | undefined;
   const isCreator = userId !== null && league.created_by === userId;
   const canManage = isCreator || isAdmin;
@@ -187,6 +196,7 @@ async function League({
           session={session}
           league={league}
           teams={teams}
+          divisions={divisions}
           ownOrder={role === "player" ? ownOrder : null}
           canUpdate={!isPreset && canManage}
           canReopen={!isPreset && isAdmin}
@@ -221,12 +231,25 @@ async function League({
               Teams and standings come from the global league, so they update automatically.
             </p>
           )}
-          {describeZones(zonesOf(league)).length > 0 && (
-            <p className="mb-2 text-sm text-muted">{describeZones(zonesOf(league)).join(" · ")}</p>
+          {zoneLines.length > 0 && (
+            <p className="mb-2 text-sm text-muted">
+              {[...(divisions.length > 0 ? ["In each conference"] : []), ...zoneLines].join(" · ")}
+            </p>
           )}
-          <TeamGrid teams={teams} />
+          {divisions.length > 0 ? (
+            <div className="flex flex-col gap-4">
+              {divisions.map((division) => (
+                <section key={division.id} aria-label={division.name}>
+                  <h3 className="poster mb-2 text-2xl">{division.name}</h3>
+                  <TeamGrid teams={teams.filter((team) => team.divisionId === division.id)} />
+                </section>
+              ))}
+            </div>
+          ) : (
+            <TeamGrid teams={teams} />
+          )}
           <div className="mt-2">
-            <ScoringNote league={league} />
+            <ScoringNote league={league} tableSizes={tableSizes(teams, divisions)} />
           </div>
         </section>
       )}

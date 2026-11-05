@@ -26,10 +26,8 @@ from (values
   ('Football', 'Eredivisie', '#F26A21', 70, 'Opens for 2027-28 around mid-2027'),
   ('Football', 'Primeira Liga', '#00A36C', 80, 'Opens for 2027-28 around mid-2027'),
   ('Football', 'Saudi Pro League', '#00C27A', 90, 'Opens for 2027-28 around mid-2027'),
-  ('Football', 'MLS East', '#1E90FF', 100, 'Opens for 2027-28 around mid-2027'),
-  ('Football', 'MLS West', '#E5007D', 101, 'Opens for 2027-28 around mid-2027'),
-  ('Basketball', 'NBA East', '#1D4ED8', 110, 'Opens for 2027-28 in late summer 2027'),
-  ('Basketball', 'NBA West', '#DC2626', 111, 'Opens for 2027-28 in late summer 2027'),
+  ('Football', 'MLS', '#1E90FF', 100, 'Opens for 2027-28 around mid-2027'),
+  ('Basketball', 'NBA', '#1D4ED8', 110, 'Opens for 2027-28 in late summer 2027'),
   ('Basketball', 'EuroLeague', '#F97316', 120, 'Opens for 2027-28 in late summer 2027'),
   ('Rugby league', 'NRL', '#16A34A', 130, null),
   ('Cricket', 'IPL', '#4F46E5', 140, null),
@@ -53,7 +51,9 @@ create or replace function pg_temp.add_season(
   p_relegation integer,
   p_promotion_label text,
   p_playoff_label text,
-  p_teams jsonb
+  p_teams jsonb,
+  -- Conferences, in order. Each team then names its own as a fifth item.
+  p_divisions text[] default null
 )
 returns void
 language plpgsql
@@ -85,9 +85,14 @@ begin
   )
   returning id into new_season;
 
-  insert into public.teams (season_id, name, short_name, colour_primary, colour_secondary)
-  select new_season, team ->> 0, team ->> 1, team ->> 2, team ->> 3
-  from jsonb_array_elements(p_teams) as team;
+  insert into public.divisions (season_id, name, position)
+  select new_season, item.name, item.position
+  from unnest(p_divisions) with ordinality as item (name, position);
+
+  insert into public.teams (season_id, name, short_name, colour_primary, colour_secondary, division_id)
+  select new_season, team ->> 0, team ->> 1, team ->> 2, team ->> 3, division.id
+  from jsonb_array_elements(p_teams) as team
+  left join public.divisions division on division.season_id = new_season and division.name = team ->> 4;
 
   insert into public.leagues (name, type, season_id, created_by)
   values (left(p_competition || ' ' || p_label, 60), 'official', new_season, null);
@@ -125,41 +130,38 @@ select pg_temp.add_season('Football', 'Premier League', '2026-27', '2026-08-21 1
 ]'::jsonb);
 
 -- First game of the sprint season: Inter Miami v FC Cincinnati, Fri 19 Feb 2027, 8pm ET.
-select pg_temp.add_season('Football', 'MLS East', '2027 Sprint', '2027-02-20 01:00:00+00', 0, 8, 0, 'Promoted', 'Playoffs', '[
-  ["Atlanta United", "ATL", "#80000A", "#FFFFFF"],
-  ["CF Montréal", "MTL", "#0033A1", "#FFFFFF"],
-  ["Charlotte FC", "CLT", "#1A85C8", "#FFFFFF"],
-  ["Chicago Fire", "CHI", "#102141", "#FFFFFF"],
-  ["Columbus Crew", "CLB", "#FEDD00", "#000000"],
-  ["D.C. United", "DC", "#000000", "#EF3E42"],
-  ["FC Cincinnati", "CIN", "#003087", "#FE5000"],
-  ["Inter Miami", "MIA", "#F7B5CD", "#231F20"],
-  ["Nashville SC", "NSH", "#ECE83A", "#1F1646"],
-  ["New England Revolution", "NE", "#0A2240", "#FFFFFF"],
-  ["New York City FC", "NYC", "#6CACE4", "#041E42"],
-  ["New York Red Bulls", "RBNY", "#ED1E36", "#FFFFFF"],
-  ["Orlando City", "ORL", "#633492", "#FFFFFF"],
-  ["Philadelphia Union", "PHI", "#071B2C", "#B38707"],
-  ["Toronto FC", "TOR", "#B81137", "#FFFFFF"]
-]'::jsonb);
-
-select pg_temp.add_season('Football', 'MLS West', '2027 Sprint', '2027-02-20 01:00:00+00', 0, 8, 0, 'Promoted', 'Playoffs', '[
-  ["Austin FC", "ATX", "#00B140", "#000000"],
-  ["Colorado Rapids", "COL", "#960A2C", "#9CC2EA"],
-  ["FC Dallas", "DAL", "#E81F3E", "#FFFFFF"],
-  ["Houston Dynamo", "HOU", "#FF6B00", "#101820"],
-  ["LA Galaxy", "LAG", "#00245D", "#FFD200"],
-  ["LAFC", "LAFC", "#000000", "#C39E6D"],
-  ["Minnesota United", "MIN", "#8CD2F4", "#231F20"],
-  ["Portland Timbers", "POR", "#004812", "#EBE72B"],
-  ["Real Salt Lake", "RSL", "#B30838", "#FFFFFF"],
-  ["San Diego FC", "SD", "#0B2340", "#D6D9DC"],
-  ["San Jose Earthquakes", "SJ", "#0067B1", "#FFFFFF"],
-  ["Seattle Sounders", "SEA", "#5D9741", "#FFFFFF"],
-  ["Sporting Kansas City", "SKC", "#91B0D5", "#002F65"],
-  ["St. Louis City", "STL", "#DD004A", "#FFFFFF"],
-  ["Vancouver Whitecaps", "VAN", "#00245E", "#FFFFFF"]
-]'::jsonb);
+select pg_temp.add_season('Football', 'MLS', '2027 Sprint', '2027-02-20 01:00:00+00', 0, 8, 0, 'Promoted', 'Playoffs', '[
+  ["Atlanta United", "ATL", "#80000A", "#FFFFFF", "East"],
+  ["CF Montréal", "MTL", "#0033A1", "#FFFFFF", "East"],
+  ["Charlotte FC", "CLT", "#1A85C8", "#FFFFFF", "East"],
+  ["Chicago Fire", "CHI", "#102141", "#FFFFFF", "East"],
+  ["Columbus Crew", "CLB", "#FEDD00", "#000000", "East"],
+  ["D.C. United", "DC", "#000000", "#EF3E42", "East"],
+  ["FC Cincinnati", "CIN", "#003087", "#FE5000", "East"],
+  ["Inter Miami", "MIA", "#F7B5CD", "#231F20", "East"],
+  ["Nashville SC", "NSH", "#ECE83A", "#1F1646", "East"],
+  ["New England Revolution", "NE", "#0A2240", "#FFFFFF", "East"],
+  ["New York City FC", "NYC", "#6CACE4", "#041E42", "East"],
+  ["New York Red Bulls", "RBNY", "#ED1E36", "#FFFFFF", "East"],
+  ["Orlando City", "ORL", "#633492", "#FFFFFF", "East"],
+  ["Philadelphia Union", "PHI", "#071B2C", "#B38707", "East"],
+  ["Toronto FC", "TOR", "#B81137", "#FFFFFF", "East"],
+  ["Austin FC", "ATX", "#00B140", "#000000", "West"],
+  ["Colorado Rapids", "COL", "#960A2C", "#9CC2EA", "West"],
+  ["FC Dallas", "DAL", "#E81F3E", "#FFFFFF", "West"],
+  ["Houston Dynamo", "HOU", "#FF6B00", "#101820", "West"],
+  ["LA Galaxy", "LAG", "#00245D", "#FFD200", "West"],
+  ["LAFC", "LAFC", "#000000", "#C39E6D", "West"],
+  ["Minnesota United", "MIN", "#8CD2F4", "#231F20", "West"],
+  ["Portland Timbers", "POR", "#004812", "#EBE72B", "West"],
+  ["Real Salt Lake", "RSL", "#B30838", "#FFFFFF", "West"],
+  ["San Diego FC", "SD", "#0B2340", "#D6D9DC", "West"],
+  ["San Jose Earthquakes", "SJ", "#0067B1", "#FFFFFF", "West"],
+  ["Seattle Sounders", "SEA", "#5D9741", "#FFFFFF", "West"],
+  ["Sporting Kansas City", "SKC", "#91B0D5", "#002F65", "West"],
+  ["St. Louis City", "STL", "#DD004A", "#FFFFFF", "West"],
+  ["Vancouver Whitecaps", "VAN", "#00245E", "#FFFFFF", "West"]
+]'::jsonb, array['East', 'West']);
 
 -- The season opens in Las Vegas on Sat 27 Feb 2027 local time. Check the time when the full draw is out.
 select pg_temp.add_season('Rugby league', 'NRL', '2027', '2027-02-27 18:00:00+00', 0, 8, 0, 'Promoted', 'Finals', '[

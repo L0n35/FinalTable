@@ -47,9 +47,19 @@ set is_admin = true
 where id = (select id from auth.users where email = 'you@example.com');
 ```
 
+### 5. Go live on Vercel
+
+Supabase only returns people to addresses it knows, and sends everyone else to the Site URL. In **Supabase > Authentication > URL Configuration**:
+
+- Set **Site URL** to the live address.
+- Under redirect URLs, keep `http://localhost:3000/**` and add the live address followed by `/**`.
+- For branch previews, add `https://final-table-git-*-<your-vercel-team>.vercel.app/**`. Previews use the same database as the live site, so anything created on one is real.
+
 ## Launch content
 
 After the migrations, run [supabase/seed/launch-leagues.sql](supabase/seed/launch-leagues.sql) once in the SQL Editor. It adds the global leagues with their teams and colours, plus the coming-soon list. It stops without changing anything if a season already exists.
+
+A database seeded before conferences existed has MLS East and MLS West as separate leagues. Once the conferences migration has run and its code is deployed, run [supabase/seed/merge-conferences.sql](supabase/seed/merge-conferences.sql) once to combine them. A new database doesn't need it.
 
 Anything in `supabase/private/` is git-ignored because it holds personal data, so it must never be committed.
 

@@ -1,6 +1,8 @@
 // The public directory's rows and what the home and Explore pages work out from them. Safe to use in
 // the browser: reading the rows happens in directory.ts.
 
+import { listNames } from "@/lib/divisions";
+
 export type DirectoryBadge = {
   name: string;
   short_name: string | null;
@@ -8,6 +10,8 @@ export type DirectoryBadge = {
   colour_primary: string;
   colour_secondary: string;
 };
+
+export type CrowdPick = { division: string; team: string; percent: number };
 
 // A row of public_directory: a global league, or a competition waiting for its next season.
 export type DirectoryRow = {
@@ -30,6 +34,9 @@ export type DirectoryRow = {
   leader_name: string | null;
   leader_points: number | null;
   badges: DirectoryBadge[] | null;
+  // Left out of answers cached before conferences existed, so these can be missing as well as empty.
+  division_names?: string[] | null;
+  crowd_picks?: CrowdPick[] | null;
 };
 
 export type ListedLeague = DirectoryRow & {
@@ -88,7 +95,16 @@ export function playerCountLine(row: DirectoryRow): string | null {
   return row.entrant_count !== null && row.entrant_count >= MIN_PLAYERS_SHOWN ? `${row.entrant_count} players` : null;
 }
 
+export function teamsLine(row: Pick<ListedLeague, "season_label" | "team_count" | "division_names">): string {
+  const parts = [row.season_label, `${row.team_count} teams`];
+  if (row.division_names?.length) parts.push(listNames(row.division_names));
+  return parts.join(" · ");
+}
+
 export function crowdLine(row: DirectoryRow): string | null {
+  if (row.crowd_picks?.length) {
+    return `To finish top: ${row.crowd_picks.map((pick) => `${pick.team} ${pick.percent}%`).join(", ")}`;
+  }
   if (!row.crowd_team || row.crowd_percent === null) return null;
   return `${row.crowd_percent}% picked ${row.crowd_team} to finish top`;
 }

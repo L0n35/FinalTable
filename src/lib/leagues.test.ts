@@ -4,6 +4,7 @@ import {
   leagueNoun,
   leagueTypeLabel,
   listedSport,
+  mergedLeagueSlug,
   readStartKind,
   SPORT_OPTIONS,
   surfaceFor,
@@ -24,6 +25,19 @@ describe("league wording", () => {
   ])("calls a %s league on competition %s a %s", (type, competition_id, noun, label) => {
     expect(leagueNoun({ type, competition_id })).toBe(noun);
     expect(leagueTypeLabel({ type, competition_id })).toBe(label);
+  });
+});
+
+describe("mergedLeagueSlug", () => {
+  it("sends the old MLS links to the merged league", () => {
+    expect(mergedLeagueSlug("mls-east-2027-sprint-ab12cd")).toBe("mls-2027-sprint");
+    expect(mergedLeagueSlug("mls-west-2027-sprint-ef34gh")).toBe("mls-2027-sprint");
+  });
+
+  it("leaves everything else alone, including the merged league and groups named after it", () => {
+    expect(mergedLeagueSlug("mls-2027-sprint")).toBeNull();
+    expect(mergedLeagueSlug("nrl-2027-ab12cd")).toBeNull();
+    expect(mergedLeagueSlug("my-mls-east-2027-sprint-ab12cd")).toBeNull();
   });
 });
 

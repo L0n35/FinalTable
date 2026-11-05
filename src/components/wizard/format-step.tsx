@@ -52,7 +52,10 @@ export function FormatStep({
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  const total = teams.length;
+  // Zones apply within each conference, so they're checked and previewed against one table.
+  const firstTable = teams.filter((team) => team.division_id === teams[0]?.division_id);
+  const isDivided = firstTable.length < teams.length;
+  const total = firstTable.length;
   const problem = zoneProblem(zones, total);
   const change = (next: Partial<Zones>) => {
     setError(null);
@@ -76,7 +79,10 @@ export function FormatStep({
 
   return (
     <div className="flex flex-col gap-4">
-      <p className="text-muted">Zones are optional. Correct picks in a zone earn bonus points.</p>
+      <p className="text-muted">
+        Zones are optional. Correct picks in a zone earn bonus points.
+        {isDivided && " These apply in each conference."}
+      </p>
 
       <ZoneToggle
         id="zone-promotion"
@@ -167,7 +173,7 @@ export function FormatStep({
       <section aria-label="Table preview">
         <h2 className="mt-2 mb-2 font-display text-xl font-bold">Preview</h2>
         <ZoneLegend zones={zones} total={total} />
-        <LeagueTable teams={teams.map(toTeam)} zones={zones} />
+        <LeagueTable teams={firstTable.map(toTeam)} zones={zones} />
       </section>
     </div>
   );

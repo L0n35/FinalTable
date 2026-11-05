@@ -6,6 +6,7 @@ import { PageFallback } from "@/components/page-fallback";
 import { PageShell } from "@/components/page-shell";
 import { PredictionLoader } from "@/components/prediction-loader";
 import { getSession } from "@/lib/auth";
+import { DIVISION_COLUMNS, type Division } from "@/lib/divisions";
 import {
   isLocked,
   LEAGUE_COLUMNS,
@@ -42,8 +43,9 @@ async function Predict({ params }: { params: Promise<{ slug: string }> }) {
     .maybeSingle();
   if (membership?.role !== "player") redirect(leaguePath);
 
-  const [{ data: teams }, { data: prediction }] = await Promise.all([
+  const [{ data: teams }, { data: divisions }, { data: prediction }] = await Promise.all([
     supabase.from("teams").select(TEAM_COLUMNS).eq("season_id", league.season_id),
+    supabase.from("divisions").select(DIVISION_COLUMNS).eq("season_id", league.season_id).order("position"),
     supabase
       .from("predictions")
       .select("team_order, needs_review, submitted_at")
@@ -63,6 +65,7 @@ async function Predict({ params }: { params: Promise<{ slug: string }> }) {
         deadline: league.deadline,
         zones: zonesOf(league),
         teams: ((teams ?? []) as TeamRow[]).map(toTeam),
+        divisions: (divisions ?? []) as Division[],
       }}
       save={submitPrediction}
       initialSubmitted={(prediction?.team_order as string[] | undefined) ?? null}

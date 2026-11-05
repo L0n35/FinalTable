@@ -49,8 +49,7 @@ describe("launch leagues", () => {
   it("creates each season with the right number of teams", async () => {
     expect(Object.fromEntries(seasons.map((row) => [row.competition, row.team_count]))).toEqual({
       "Premier League": 20,
-      "MLS East": 15,
-      "MLS West": 15,
+      MLS: 30,
       NRL: 18,
       IPL: 10,
       AFL: 18,
@@ -64,7 +63,27 @@ describe("launch leagues", () => {
     const { rows } = await db.pg.query<{ n: number }>(
       "select count(*)::int as n from public.leagues where type = 'official' and created_by is null",
     );
-    expect(rows[0].n).toBe(6);
+    expect(rows[0].n).toBe(5);
+  });
+
+  it("splits MLS into East and West, with 15 teams each and nobody left out", async () => {
+    const { rows } = await db.pg.query<{ name: string; position: number; teams: number }>(
+      `select d.name, d.position, count(t.id)::int as teams
+       from public.divisions d
+       left join public.teams t on t.division_id = d.id
+       where d.season_id = $1
+       group by d.name, d.position
+       order by d.position`,
+      [season("MLS").season_id],
+    );
+    expect(rows).toEqual([
+      { name: "East", position: 1, teams: 15 },
+      { name: "West", position: 2, teams: 15 },
+    ]);
+    const other = await db.pg.query<{ n: number }>("select count(*)::int as n from public.divisions where season_id <> $1", [
+      season("MLS").season_id,
+    ]);
+    expect(other.rows[0].n).toBe(0);
   });
 
   it("gives every team a unique name and short code in its league, with colours and no logo", async () => {
@@ -101,11 +120,10 @@ describe("launch leagues", () => {
     expect(season("AFL")).toMatchObject({ playoff_from: 1, playoff_to: 10, playoff_label: "Finals", promotion_count: 0 });
     expect(season("NRL")).toMatchObject({ playoff_from: 1, playoff_to: 8, playoff_label: "Finals" });
     expect(season("IPL")).toMatchObject({ playoff_from: 1, playoff_to: 4, playoff_label: "Playoffs" });
-    expect(season("MLS East")).toMatchObject({ playoff_from: 1, playoff_to: 8, playoff_label: "Playoffs" });
-    expect(season("MLS West")).toMatchObject({ playoff_from: 1, playoff_to: 8, playoff_label: "Playoffs" });
+    expect(season("MLS")).toMatchObject({ playoff_from: 1, playoff_to: 8, playoff_label: "Playoffs" });
   });
 
-  it("lists the coming-soon competitions, including NBA East and West", async () => {
+  it("lists the coming-soon competitions, with NBA as one league", async () => {
     const { rows } = await db.pg.query<{ name: string }>(
       "select name from public.competitions where opens_note is not null order by name",
     );
@@ -116,10 +134,8 @@ describe("launch leagues", () => {
       "EuroLeague",
       "La Liga",
       "Ligue 1",
-      "MLS East",
-      "MLS West",
-      "NBA East",
-      "NBA West",
+      "MLS",
+      "NBA",
       "Premier League",
       "Primeira Liga",
       "Saudi Pro League",

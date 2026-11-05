@@ -54,8 +54,9 @@ export function useRanking({
     buzz();
   };
 
-  const place = (id: string, index: number) => {
-    setAnnouncement(`${nameOf(id)} moved to position ${index + 1}.`);
+  // The position people see can differ from the index when a table is part of a longer order.
+  const place = (id: string, index: number, position = index + 1) => {
+    setAnnouncement(`${nameOf(id)} moved to position ${position}.`);
     withTransition(() => {
       changeOrder(arrayMove(order, order.indexOf(id), index));
       setSelectedId(null);

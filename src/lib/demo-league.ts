@@ -1,3 +1,4 @@
+import type { Division } from "@/lib/divisions";
 import type { Team, Zones } from "@/lib/leagues";
 
 export type League = {
@@ -6,6 +7,8 @@ export type League = {
   deadline: string;
   zones: Zones;
   teams: Team[];
+  // Conferences, if the league has any. Each team then says which one it's in.
+  divisions?: Division[];
 };
 
 const teams: Team[] = [

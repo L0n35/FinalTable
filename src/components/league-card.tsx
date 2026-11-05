@@ -8,6 +8,7 @@ import {
   crowdLine,
   leaderLine,
   playerCountLine,
+  teamsLine,
   type DirectoryRow,
   type ListedLeague,
 } from "@/lib/directory-rows";
@@ -130,9 +131,7 @@ export function LeagueCard({ league }: { league: ListedLeague }) {
         )}
       </span>
       <h3 className="poster mt-3 text-4xl leading-none break-words">{league.competition_name}</h3>
-      <span className="mt-1 text-sm text-foreground/90">
-        {league.season_label} · {league.team_count} teams
-      </span>
+      <span className="mt-1 text-sm text-foreground/90">{teamsLine(league)}</span>
       <span className="mt-3">
         <BadgeStrip league={league} />
       </span>
@@ -162,9 +161,7 @@ export function FeaturedLeagueCard({ league }: { league: ListedLeague }) {
         <StatePill state={league.state} />
       </span>
       <h3 className="poster mt-3 text-5xl leading-none break-words">{league.competition_name}</h3>
-      <span className="mt-1 text-foreground/90">
-        {league.season_label} · {league.team_count} teams
-      </span>
+      <span className="mt-1 text-foreground/90">{teamsLine(league)}</span>
       <TimeLeft iso={league.deadline} className="poster mt-4 text-[clamp(2.75rem,15vw,3.75rem)] leading-none text-accent-on-turf normal-case tabular-nums" />
       <span className="mt-1 text-sm text-foreground/90">
         Predictions lock <LocalTime iso={league.deadline} />
