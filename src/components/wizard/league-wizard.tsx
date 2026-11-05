@@ -11,7 +11,7 @@ import { FormatStep } from "@/components/wizard/format-step";
 import { OfficialStep, type ExistingSeason } from "@/components/wizard/official-step";
 import { PresetPicker, type Preset } from "@/components/wizard/preset-picker";
 import { TeamsStep } from "@/components/wizard/teams-step";
-import { isPresetLeague, leagueNoun, seasonTitle, type LeagueRow, type TeamRow } from "@/lib/leagues";
+import { isPresetLeague, leagueNoun, seasonTitle, type LeagueRow, type StartKind, type TeamRow } from "@/lib/leagues";
 
 const STEPS = ["basics", "teams", "format", "review"] as const;
 export type WizardStep = (typeof STEPS)[number];
@@ -21,8 +21,6 @@ const STEP_TITLES: Record<WizardStep, string> = {
   format: "Format",
   review: "Review",
 };
-
-type StartKind = "preset" | "custom" | "official";
 
 function StartChoice({
   title,
@@ -79,7 +77,7 @@ export function LeagueWizard({
 
   const stepIndex = STEPS.indexOf(step);
   const isDraft = !league || league.status === "draft";
-  const noun = league ? leagueNoun(league) : "group";
+  const noun = league ? leagueNoun(league) : "league";
 
   const go = (next: WizardStep) => {
     setError(null);
@@ -112,16 +110,16 @@ export function LeagueWizard({
   if (!league && kind === null) {
     return (
       <div className="flex flex-col gap-3">
-        <h1 className="mb-1 font-display text-3xl font-bold">Create a group</h1>
+        <h1 className="mb-1 font-display text-3xl font-bold">Start a league or group</h1>
         <StartChoice
-          title="Play a real league"
-          description="Pick a real league. Teams and standings update automatically."
-          onClick={() => setKind("preset")}
+          title="Run your own league"
+          description="Your teams, your format, your deadline. You keep the table, and the scores follow."
+          onClick={() => setKind("custom")}
         />
         <StartChoice
-          title="Make your own"
-          description="Set up your own teams, format and deadline, and keep the table yourself."
-          onClick={() => setKind("custom")}
+          title="Play a real league with friends"
+          description="Make a group on a real league. Teams and standings update automatically."
+          onClick={() => setKind("preset")}
         />
         {isAdmin && (
           <StartChoice

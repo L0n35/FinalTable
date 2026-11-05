@@ -10,7 +10,7 @@ import { readDirectory, searchPublicGroups } from "@/lib/directory";
 import { accentsByCompetition } from "@/lib/directory-rows";
 
 export const metadata: Metadata = {
-  title: "Search groups | Final Table",
+  title: "Search leagues and groups | Final Table",
   robots: { index: false },
 };
 
@@ -23,9 +23,9 @@ async function Results({ searchParams }: { searchParams: Promise<{ q?: string | 
     <div className="flex flex-col gap-4">
       <GroupSearchForm key={query} query={query} />
       {!query ? (
-        <p className="text-muted">Type part of a group&apos;s name to find it.</p>
+        <p className="text-muted">Type part of a league or group&apos;s name to find it.</p>
       ) : groups.length === 0 ? (
-        <p className="text-muted">No public groups match that search.</p>
+        <p className="text-muted">No public leagues or groups match that search.</p>
       ) : (
         <GroupList groups={groups} accents={accentsByCompetition(rows)} />
       )}

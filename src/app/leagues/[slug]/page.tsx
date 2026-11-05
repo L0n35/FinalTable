@@ -19,8 +19,8 @@ import {
   isLocked,
   isPresetLeague,
   LEAGUE_COLUMNS,
-  LEAGUE_TYPE_LABELS,
   leagueNoun,
+  leagueTypeLabel,
   seasonTitle,
   surfaceFor,
   TEAM_COLUMNS,
@@ -43,7 +43,7 @@ export async function generateMetadata({ params }: PageProps<"/leagues/[slug]">)
   const league = await readLeague(slug);
   return {
     title: `${league?.name ?? "League"} | Final Table`,
-    // Only global leagues belong in search results. Groups are players' own.
+    // Only global leagues belong in search results. Everything else belongs to the players who made it.
     ...(league?.type === "official" ? {} : { robots: { index: false } }),
   };
 }
@@ -109,7 +109,7 @@ async function League({
         className="league-header relative overflow-hidden rounded-2xl p-5"
       >
         <p className="text-sm font-semibold text-foreground/90">
-          {LEAGUE_TYPE_LABELS[league.type]}
+          {leagueTypeLabel(league)}
           {league.sport ? ` · ${league.sport}` : ""}
           {isDraft ? " · Draft" : league.status === "finished" ? " · Finished" : isLive ? " · Live" : ""}
         </p>

@@ -8,9 +8,9 @@ import { LocalTime } from "@/components/local-time";
 import { PageFallback } from "@/components/page-fallback";
 import { PageShell } from "@/components/page-shell";
 import { getSession } from "@/lib/auth";
-import { isLocked, leagueNoun, type LeagueType } from "@/lib/leagues";
+import { isLocked, type LeagueType } from "@/lib/leagues";
 
-export const metadata: Metadata = { title: "Join a group | Final Table", robots: { index: false } };
+export const metadata: Metadata = { title: "You're invited | Final Table", robots: { index: false } };
 
 type Preview = {
   id: string;
@@ -39,7 +39,7 @@ async function Join({
   if (!preview) {
     return (
       <div className="flex flex-col gap-3">
-        <h1 className="font-display text-3xl font-bold">We can&apos;t find that group</h1>
+        <h1 className="font-display text-3xl font-bold">We can&apos;t find that invite</h1>
         <p className="text-muted">
           The code may be mistyped, or it may have been replaced. Check with whoever invited you.
         </p>
@@ -92,7 +92,7 @@ async function Join({
           leagueId={preview.id}
           slug={preview.slug}
           joinCode={code}
-          label={started ? `Follow this ${leagueNoun(preview)}` : `Join this ${leagueNoun(preview)}`}
+          label={started ? "Follow along" : "Join"}
           autoJoin={join === "1"}
         />
       ) : (

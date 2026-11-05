@@ -9,16 +9,16 @@ export default function PrivacyPage() {
       <LegalSection title="What we collect">
         <p>When you sign in with Google, we receive your name, email address and profile picture address.</p>
         <p>
-          When you play, we store your display name, the leagues and groups you join, your predictions, any groups and
-          team logos you create, and any reports you send.
+          When you play, we store your display name, the leagues and groups you join, your predictions, any leagues,
+          groups and team logos you create, and any reports you send.
         </p>
       </LegalSection>
 
       <LegalSection title="Who can see it">
         <p>Your email address is never shown to other players.</p>
         <p>
-          Anyone can browse the home and Explore pages without an account. They list global leagues and public groups,
-          with player counts and the display name of whoever is leading a global league.
+          Anyone can browse the home and Explore pages without an account. They list global leagues, and public leagues
+          and groups, with player counts and the display name of whoever is leading a global league.
         </p>
         <p>
           They can also show crowd figures, such as the share of players who picked a team to finish top. These are
@@ -27,7 +27,7 @@ export default function PrivacyPage() {
         </p>
         <p>
           Your display name appears to people in your leagues and groups, and on the leaderboards of global leagues and
-          public groups, including to people who aren&apos;t signed in.
+          public leagues and groups, including to people who aren&apos;t signed in.
         </p>
         <p>
           Your predictions stay hidden until the deadline. After that, signed-in people who can see a league or group you
@@ -64,12 +64,12 @@ export default function PrivacyPage() {
       <LegalSection title="Keeping and deleting your data">
         <p>
           You can change your display name or delete your account at any time on your account page. Deleting it removes
-          your profile, memberships and predictions straight away, and any groups nobody else is in.
+          your profile, memberships and predictions straight away, and any leagues and groups nobody else is in.
         </p>
         <p>
-          A group other people are in carries on and passes to its longest-standing member. Reports you sent stay,
-          without your name. Encrypted backups are kept for 14 days and then removed. Uploaded logo files can stay in
-          storage after their group is gone. Contact us if you want one removed.
+          A league or group other people are in carries on and passes to its longest-standing member. Reports you sent
+          stay, without your name. Encrypted backups are kept for 14 days and then removed. Uploaded logo files can stay
+          in storage after their league is gone. Contact us if you want one removed.
         </p>
       </LegalSection>
     </LegalPage>

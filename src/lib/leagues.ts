@@ -129,17 +129,25 @@ export function zonesOf(league: LeagueRow): Zones {
   };
 }
 
-// Everything is a league in the database. People see official ones as leagues and their own as groups.
-export function leagueNoun(league: Pick<LeagueRow, "type">): "league" | "group" {
-  return league.type === "official" ? "league" : "group";
+// Everything is a league in the database. On screen, a group is friends playing a real league together.
+// Someone running their own competition, with their own teams and table, is running a league.
+export function leagueNoun(league: Pick<LeagueRow, "type" | "competition_id">): "league" | "group" {
+  return isPresetLeague(league) ? "group" : "league";
 }
 
 // "Official" beside a real league's name would read as if that league endorses it.
-export const LEAGUE_TYPE_LABELS: Record<LeagueType, string> = {
-  official: "Global league",
-  public: "Public group",
-  private: "Private group",
-};
+export function leagueTypeLabel(league: Pick<LeagueRow, "type" | "competition_id">): string {
+  if (league.type === "official") return "Global league";
+  return `${league.type === "public" ? "Public" : "Private"} ${leagueNoun(league)}`;
+}
+
+export type StartKind = "preset" | "custom" | "official";
+
+// What a link to the create page asked to start. Only admins can start an official league.
+export function readStartKind(kind: unknown, isAdmin: boolean): StartKind | null {
+  if (kind === "preset" || kind === "custom") return kind;
+  return kind === "official" && isAdmin ? "official" : null;
+}
 
 // Sets the colour for the league-card family of styles. Without one, they fall back to their default.
 export function accentStyle(accent: string | null | undefined): CSSProperties | undefined {
@@ -166,9 +174,26 @@ const SURFACES: Record<string, Surface> = {
   nascar: "track",
 };
 
-// The ground a league plays on. Group creators can type any sport, so anything else gets a plain one.
+// The ground a league plays on. People running their own league can type any sport, so anything else gets a plain one.
 export function surfaceFor(sport: string | null | undefined): Surface {
   return SURFACES[(sport ?? "").trim().toLowerCase()] ?? "plain";
+}
+
+// Offered when someone sets up their own league, so choosing one gets them that sport's ground.
+export const SPORT_OPTIONS = [
+  "Football",
+  "Basketball",
+  "Cricket",
+  "Aussie rules",
+  "Rugby league",
+  "Rugby union",
+  "Motorsport",
+];
+
+// The listed spelling of a sport, or null if it's something the creator typed themselves.
+export function listedSport(sport: string): string | null {
+  const wanted = sport.trim().toLowerCase();
+  return SPORT_OPTIONS.find((option) => option.toLowerCase() === wanted) ?? null;
 }
 
 // A league playing an official season that isn't the official league itself.

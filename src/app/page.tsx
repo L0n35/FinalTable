@@ -7,11 +7,12 @@ import { JoinCodeForm } from "@/components/join-code-form";
 import { JoinedLeaguesProvider } from "@/components/joined-leagues";
 import { ComingSoonList, LeagueCard } from "@/components/league-card";
 import { PageShell } from "@/components/page-shell";
+import { RunYourOwn } from "@/components/run-your-own";
 import { YourLeagues } from "@/components/your-leagues";
 import { readDirectory, readPublicGroups } from "@/lib/directory";
 import { accentsByCompetition, splitDirectory, type ListedLeague } from "@/lib/directory-rows";
 
-// Enough people that a brand-new group can't put its name on the front page.
+// Enough people that a brand-new league or group can't put its name on the front page.
 const HOME_GROUP_MIN_PLAYERS = 3;
 const HOME_GROUP_LIMIT = 6;
 
@@ -65,9 +66,14 @@ function Hero() {
           >
             Make your first prediction
           </Link>
-          <Link href="/demo" className="flex h-11 items-center justify-center font-semibold underline">
-            Try the demo, no account needed
-          </Link>
+          <div className="flex flex-col items-center sm:flex-row sm:justify-center sm:gap-6">
+            <Link href="/demo" className="flex h-11 items-center font-semibold underline">
+              Try the demo, no account needed
+            </Link>
+            <Link href="#run-your-own" className="flex h-11 items-center font-semibold underline">
+              Or run your own league
+            </Link>
+          </div>
         </div>
       </div>
       <HeroTable />
@@ -119,6 +125,8 @@ export default async function Home() {
             </section>
           )}
 
+          <RunYourOwn />
+
           {live.length > 0 && (
             <section aria-label="Live now">
               <SectionHeading title="Live now" />
@@ -127,8 +135,8 @@ export default async function Home() {
           )}
 
           {groups.length > 0 && (
-            <section aria-label="Public groups">
-              <SectionHeading title="Public groups" href="/explore/groups" linkLabel="All groups" />
+            <section aria-label="Run by players">
+              <SectionHeading title="Run by players" href="/explore/groups" linkLabel="See all" />
               <GroupList groups={groups} accents={accentsByCompetition(rows)} />
             </section>
           )}
@@ -150,7 +158,7 @@ export default async function Home() {
             <div className="flex flex-col gap-2 rounded-xl border border-line bg-surface p-4">
               <h2 className="poster text-2xl">Playing with friends?</h2>
               <Link
-                href="/leagues/new"
+                href="/leagues/new?kind=preset"
                 prefetch={false}
                 className="flex h-13 items-center justify-center rounded-lg border border-line font-semibold"
               >

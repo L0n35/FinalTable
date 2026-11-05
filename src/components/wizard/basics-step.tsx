@@ -3,6 +3,7 @@
 import { useState, useTransition, type FormEvent } from "react";
 import { createCustomLeague, updateBasics } from "@/app/leagues/actions";
 import { Field, FormError, inputClass, Stepper, StepActions } from "@/components/wizard/fields";
+import { SportChoice } from "@/components/wizard/sport-choice";
 import { MAX_TEAMS, MIN_TEAMS, isPresetLeague, type LeagueRow, type LeagueType } from "@/lib/leagues";
 
 // datetime-local works in the viewer's own time zone, without an offset.
@@ -138,7 +139,7 @@ export function BasicsStep({
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-5">
-      <Field label={isOfficial ? "League name" : "Group name"} htmlFor="league-name">
+      <Field label={isPreset ? "Group name" : "League name"} htmlFor="league-name">
         <input
           id="league-name"
           required
@@ -152,18 +153,7 @@ export function BasicsStep({
 
       {!isOfficial && <PrivacyChoice value={type} onChange={setType} />}
 
-      {!isPreset && !isOfficial && (
-        <Field label="Sport (optional)" htmlFor="league-sport">
-          <input
-            id="league-sport"
-            maxLength={40}
-            value={sport}
-            onChange={(event) => setSport(event.target.value)}
-            placeholder="Football"
-            className={inputClass}
-          />
-        </Field>
-      )}
+      {!isPreset && !isOfficial && <SportChoice value={sport} onChange={setSport} />}
 
       {!league && (
         <div className="flex items-center justify-between gap-3">

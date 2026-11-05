@@ -15,8 +15,8 @@ export default function TermsPage() {
 
       <LegalSection title="What you upload">
         <p>
-          You are responsible for what you add, including group names, team names, logos and your display name. Only
-          upload images you have the right to use. Club and league logos are often trademarked or under copyright.
+          You are responsible for what you add, including league, group and team names, logos and your display name.
+          Only upload images you have the right to use. Club and league logos are often trademarked or under copyright.
         </p>
         <p>
           You keep your rights in what you upload, and you allow us to store and show it so the game can run.
@@ -36,8 +36,8 @@ export default function TermsPage() {
 
       <LegalSection title="Scores and results">
         <p>
-          Group creators and admins enter standings by hand, so they can be wrong or late. Global leagues are run by this
-          site and aren&apos;t connected to or endorsed by any real league or club.
+          People running their own leagues and admins enter standings by hand, so they can be wrong or late. Global
+          leagues are run by this site and aren&apos;t connected to or endorsed by any real league or club.
         </p>
       </LegalSection>
 

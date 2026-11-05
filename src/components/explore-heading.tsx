@@ -11,8 +11,8 @@ export function ExploreHeading({ current }: { current: "leagues" | "groups" }) {
         label="Leagues and groups"
         current={current}
         options={[
-          { key: "leagues", label: "Leagues", href: "/explore" },
-          { key: "groups", label: "Groups", href: "/explore/groups" },
+          { key: "leagues", label: "Global leagues", href: "/explore" },
+          { key: "groups", label: "Run by players", href: "/explore/groups" },
         ]}
       />
     </>

@@ -10,8 +10,8 @@ import { TeamBadge } from "@/components/team-badge";
 import { getSession, isCurrentUserAdmin } from "@/lib/auth";
 import {
   LEAGUE_COLUMNS,
-  LEAGUE_TYPE_LABELS,
   leagueNoun,
+  leagueTypeLabel,
   TEAM_COLUMNS,
   toTeam,
   type LeagueRow,
@@ -97,7 +97,7 @@ async function Reports() {
               )}
               {league && (
                 <p className="text-sm text-muted">
-                  {league.type === "official" ? "Official league" : LEAGUE_TYPE_LABELS[league.type]}
+                  {league.type === "official" ? "Official league" : leagueTypeLabel(league)}
                 </p>
               )}
             </div>

@@ -40,12 +40,12 @@ Sport: Football
 
 A **season** is the thing being predicted. A **league** is a group of people playing a season, with a name, a privacy setting and members. A custom league gets its own hidden season, which users never see, so every league works the same way.
 
-**On screen,** official leagues are called **global leagues**, because "official" beside a real league's name would read as if that league endorses them. Leagues people create are called **groups**. Database names and `/leagues/` URLs keep the word "league".
+**On screen,** official leagues are called **global leagues**, because "official" beside a real league's name would read as if that league endorses them. Someone running their own competition, with their own teams and table, has a **league**. Friends playing a real league together have a **group**. Database names and `/leagues/` URLs keep the word "league".
 
 | Type | Created by | Listed on Explore | How to join |
 |---|---|---|---|
-| Official | Any admin. Belongs to the site, with no owner | Yes, Leagues tab | Anyone signed in |
-| Public | Any logged-in user | Yes, Groups tab | Anyone |
+| Official | Any admin. Belongs to the site, with no owner | Yes, Global leagues tab | Anyone signed in |
+| Public | Any logged-in user | Yes, Run by players tab | Anyone |
 | Private | Any logged-in user | No | Code or link |
 
 Public and private leagues can be **custom**, with their own teams and table, or use a **preset**, which plays an official season.
@@ -70,12 +70,13 @@ An admin can add someone's table for them, using the SQL Editor only. A guest is
 
 ### Browsing without an account
 
-The home and Explore pages, and global league and public group pages, need no account. Joining and seeing other people's picks still need sign-in.
+The home and Explore pages, and the pages of global leagues and public leagues and groups, need no account. Joining and seeing other people's picks still need sign-in.
 
 - **Cards** show the lock date and time left, and the current leader once a league is live.
 - **Player counts and the crowd's pick** appear from 10 players, so a small league can't give away who picked what. The crowd's pick covers everyone with a table for that season, including private groups, and is rounded to the nearest 5%.
-- **Public groups** reach the home page from 3 players, so a brand-new group can't put its name on the front page. Explore lists them all.
-- **Search engines** see global leagues only. Group and join pages are marked noindex.
+- **Public leagues and groups** reach the home page from 3 players, so a brand-new one can't put its name on the front page. Explore lists them all.
+- **Running your own league** has its own section on the home page, leading straight into the setup wizard. Its example uses made-up teams and players, and says so.
+- **Search engines** see global leagues only. Players' own leagues, groups and join pages are marked noindex.
 
 ### One prediction per season
 

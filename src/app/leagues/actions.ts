@@ -42,7 +42,7 @@ export type TeamInput = {
 };
 
 const MESSAGES: Record<string, string> = {
-  league_limit_reached: "You've reached the limit of 5 new groups a day. Please try again tomorrow.",
+  league_limit_reached: "You've reached the limit of 5 new leagues and groups a day. Please try again tomorrow.",
   deadline_must_be_in_the_future: "The lock time needs to be in the future.",
   official_leagues_need_a_competition: "That type isn't available here.",
   admin_only: "Only admins can do that.",

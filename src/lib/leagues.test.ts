@@ -1,6 +1,65 @@
 import { describe, expect, it } from "vitest";
-import { initialsFor, surfaceFor, zoneProblem } from "@/lib/leagues";
+import {
+  initialsFor,
+  leagueNoun,
+  leagueTypeLabel,
+  listedSport,
+  readStartKind,
+  SPORT_OPTIONS,
+  surfaceFor,
+  zoneProblem,
+  type LeagueType,
+} from "@/lib/leagues";
 import { zoneFor } from "@/lib/zones";
+
+describe("league wording", () => {
+  const COMPETITION = "a-competition";
+
+  it.each<[LeagueType, string | null, "league" | "group", string]>([
+    ["official", COMPETITION, "league", "Global league"],
+    ["public", null, "league", "Public league"],
+    ["private", null, "league", "Private league"],
+    ["public", COMPETITION, "group", "Public group"],
+    ["private", COMPETITION, "group", "Private group"],
+  ])("calls a %s league on competition %s a %s", (type, competition_id, noun, label) => {
+    expect(leagueNoun({ type, competition_id })).toBe(noun);
+    expect(leagueTypeLabel({ type, competition_id })).toBe(label);
+  });
+});
+
+describe("readStartKind", () => {
+  it("opens the choice a link asks for", () => {
+    expect(readStartKind("custom", false)).toBe("custom");
+    expect(readStartKind("preset", false)).toBe("preset");
+  });
+
+  it("only lets admins start an official league", () => {
+    expect(readStartKind("official", true)).toBe("official");
+    expect(readStartKind("official", false)).toBeNull();
+  });
+
+  it("ignores anything else, including a repeated query parameter", () => {
+    expect(readStartKind(undefined, true)).toBeNull();
+    expect(readStartKind("nonsense", true)).toBeNull();
+    expect(readStartKind(["custom", "preset"], true)).toBeNull();
+  });
+});
+
+describe("sport options", () => {
+  it.each(SPORT_OPTIONS)("gives %s a ground of its own", (sport) => {
+    expect(surfaceFor(sport)).not.toBe("plain");
+  });
+
+  it("recognises a listed sport however it was typed", () => {
+    expect(listedSport("  football ")).toBe("Football");
+    expect(listedSport("RUGBY LEAGUE")).toBe("Rugby league");
+  });
+
+  it("leaves anything else as the creator typed it", () => {
+    expect(listedSport("Darts")).toBeNull();
+    expect(listedSport("")).toBeNull();
+  });
+});
 
 describe("initialsFor", () => {
   it.each([
@@ -26,7 +85,7 @@ describe("surfaceFor", () => {
     expect(surfaceFor(sport)).toBe(surface);
   });
 
-  it("ignores case and spare spaces, because group creators type the sport themselves", () => {
+  it("ignores case and spare spaces, because people can type the sport themselves", () => {
     expect(surfaceFor("  football ")).toBe("football");
     expect(surfaceFor("F1")).toBe("track");
   });

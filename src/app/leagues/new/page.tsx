@@ -7,14 +7,19 @@ import { WizardLoader } from "@/components/wizard/wizard-loader";
 import { getSession, isCurrentUserAdmin } from "@/lib/auth";
 import { readDirectory } from "@/lib/directory";
 import { splitDirectory } from "@/lib/directory-rows";
-import { isLocked, LEAGUE_COLUMNS, type LeagueRow } from "@/lib/leagues";
+import { isLocked, LEAGUE_COLUMNS, readStartKind, type LeagueRow } from "@/lib/leagues";
 
-export const metadata: Metadata = { title: "Create a group | Final Table" };
+export const metadata: Metadata = { title: "Start a league or group | Final Table" };
 
 async function NewLeague({ searchParams }: { searchParams: Promise<{ kind?: string | string[] }> }) {
   const { kind } = await searchParams;
   const session = await getSession();
-  if (!session.userId) redirect("/login?next=/leagues/new");
+  if (!session.userId) {
+    // Keeps what they chose through sign-in. Whether they can have it is checked when they return.
+    const requested = readStartKind(kind, true);
+    const next = requested ? `/leagues/new?kind=${requested}` : "/leagues/new";
+    redirect(`/login?next=${encodeURIComponent(next)}`);
+  }
 
   const [isAdmin, { data }, directory] = await Promise.all([
     isCurrentUserAdmin(session),
@@ -35,7 +40,7 @@ async function NewLeague({ searchParams }: { searchParams: Promise<{ kind?: stri
       presets={presets}
       comingSoon={splitDirectory(directory).comingSoon.map((row) => row.competition_name)}
       officialSeasons={isAdmin ? official : []}
-      initialKind={kind === "official" && isAdmin ? "official" : null}
+      initialKind={readStartKind(kind, isAdmin)}
     />
   );
 }

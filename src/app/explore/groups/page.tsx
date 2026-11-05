@@ -9,13 +9,13 @@ import { readDirectory, readPublicGroups } from "@/lib/directory";
 import { accentsByCompetition, type PublicGroup } from "@/lib/directory-rows";
 
 export const metadata: Metadata = {
-  title: "Public groups | Final Table",
-  description: "Find a public group to play in, or see how other people's predictions are doing.",
+  title: "Run by players | Final Table",
+  description: "Find a public league or group to play in, or see how other people's predictions are doing.",
 };
 
-const OWN_LEAGUES = "Made by players";
+const OWN_LEAGUES = "Players' own leagues";
 
-// Groups playing the same league together, biggest first, with players' own tables after them.
+// Groups playing the same real league together, biggest first, with players' own leagues after them.
 function byCompetition(groups: PublicGroup[]) {
   const named = groups.flatMap((group) => (group.competition_name ? [group.competition_name] : []));
   return [...new Set(named), ...(groups.some((group) => !group.competition_name) ? [OWN_LEAGUES] : [])].map((title) => ({
@@ -34,7 +34,7 @@ function Listing({
   accents: Map<string, string>;
 }) {
   return (
-    <section aria-label={`${title} groups`} className="flex flex-col gap-4">
+    <section aria-label={`${title} leagues and groups`} className="flex flex-col gap-4">
       <h2 className="poster text-3xl">{title}</h2>
       {byCompetition(groups).map((competition) => (
         <div key={competition.title} className="flex flex-col gap-2">
@@ -43,6 +43,27 @@ function Listing({
         </div>
       ))}
     </section>
+  );
+}
+
+function StartYourOwn() {
+  return (
+    <div className="grid gap-2 md:grid-cols-2">
+      <Link
+        href="/leagues/new?kind=custom"
+        prefetch={false}
+        className="poster flex h-13 items-center justify-center rounded-xl bg-accent text-xl text-accent-ink"
+      >
+        Run your own league
+      </Link>
+      <Link
+        href="/leagues/new?kind=preset"
+        prefetch={false}
+        className="flex h-13 items-center justify-center rounded-xl border border-line font-semibold"
+      >
+        Create a group on a real league
+      </Link>
+    </div>
   );
 }
 
@@ -60,14 +81,8 @@ export default async function PublicGroupsPage() {
           <GroupSearchForm />
           {groups.length === 0 ? (
             <div className="rounded-2xl border border-line bg-surface p-5">
-              <h2 className="poster text-3xl">No public groups yet</h2>
+              <h2 className="poster text-3xl">Nothing here yet</h2>
               <p className="mt-1 text-muted">Be the first, and get your friends in on it.</p>
-              <Link
-                href="/leagues/new"
-                className="poster mt-3 flex h-13 items-center justify-center rounded-xl bg-accent text-xl text-accent-ink"
-              >
-                Create a group
-              </Link>
             </div>
           ) : (
             <>
@@ -75,6 +90,7 @@ export default async function PublicGroupsPage() {
               {finished.length > 0 && <Listing title="Finished" groups={finished} accents={accents} />}
             </>
           )}
+          <StartYourOwn />
         </div>
       </JoinedLeaguesProvider>
     </PageShell>
