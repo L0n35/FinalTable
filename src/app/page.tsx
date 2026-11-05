@@ -66,14 +66,9 @@ function Hero() {
           >
             Make your first prediction
           </Link>
-          <div className="flex flex-col items-center sm:flex-row sm:justify-center sm:gap-6">
-            <Link href="/demo" className="flex h-11 items-center font-semibold underline">
-              Try the demo, no account needed
-            </Link>
-            <Link href="#run-your-own" className="flex h-11 items-center font-semibold underline">
-              Or run your own league
-            </Link>
-          </div>
+          <Link href="/demo" className="flex h-11 items-center justify-center font-semibold underline">
+            Try the demo, no account needed
+          </Link>
         </div>
       </div>
       <HeroTable />

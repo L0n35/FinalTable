@@ -205,12 +205,13 @@ export function BadgeMarquee({ rows }: { rows: DirectoryRow[] }) {
   );
 }
 
-// There's no league page yet, so this says what's coming rather than linking anywhere.
+// There's no league page yet, so this says what's coming rather than linking anywhere. It shows only
+// the league's colour, because the ground is for leagues people can play.
 function ComingSoonTile({ row }: { row: DirectoryRow }) {
   return (
     <div
       style={accentStyle(row.accent)}
-      data-surface={surfaceFor(row.sport)}
+      data-surface="plain"
       className="league-tile flex h-full min-h-12 items-center rounded-xl border border-chalk px-3 py-2"
     >
       <span className="font-display text-xl leading-tight font-bold">{row.competition_name}</span>

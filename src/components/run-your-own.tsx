@@ -79,10 +79,9 @@ function ExampleLeague() {
 export function RunYourOwn() {
   return (
     <section
-      id="run-your-own"
       aria-labelledby="run-your-own-title"
       data-surface="football"
-      className="league-header relative grid scroll-mt-4 grid-cols-1 gap-6 overflow-hidden rounded-2xl p-5 md:grid-cols-2 md:gap-10 md:p-8"
+      className="league-header relative grid grid-cols-1 gap-6 overflow-hidden rounded-2xl p-5 md:grid-cols-2 md:gap-10 md:p-8"
     >
       <div className="flex flex-col">
         <h2 id="run-your-own-title" className="poster text-5xl leading-none md:text-6xl">
