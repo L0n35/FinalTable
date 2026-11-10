@@ -2,7 +2,23 @@
 
 A mobile-first web app where players rank a league's teams before its deadline, then follow a live leaderboard through the season. See [SPEC.md](SPEC.md) for the full product spec.
 
+**Live: [final-table-lovat.vercel.app](https://final-table-lovat.vercel.app)**
+
 Built with Next.js, TypeScript, Tailwind CSS and Supabase.
+
+## Why I built this
+
+It started as a game with friends: everyone ranks the Premier League table before the season starts, then we see who called it. Final Table turns that into something anyone can run, for any league in any sport, from a link they share. My friends' 2026–27 Premier League tables are already in it.
+
+## Key decisions
+
+- **The ranking screen came first.** Putting 20 teams in order on a phone is the make-or-break moment, so I built it before anything else and tested it on real phones. Only the drag handle starts a drag, so scrolling and dragging never fight, and tap-to-place works with no drag library at all. The library (`@dnd-kit/react`, still pre-1.0) is pinned to an exact version and sits behind a simple `order` / `onChange` interface, so it can be swapped out.
+- **The database enforces the rules, not the browser.** Row-level security and database functions block predictions after the deadline, hide other players' picks until then, check every table has each team exactly once, and only let the scoring function write scores. Each rule has a test that runs the real schema on an in-process Postgres, so `npm test` needs no accounts or Docker.
+- **Deadlines use the database clock, not a scheduled job.** A league locks by comparing its deadline with the database time whenever data is read or written, so it happens exactly on time. Vercel's free cron can run up to 59 minutes late, so it only does a daily keep-alive.
+- **No sports data feed.** The league's creator, or an admin for global leagues, updates the standings. That's a manual step, but it's what lets any league in any sport work.
+- **Built to run on free tiers.** Public pages are built ahead and refreshed at most every 15 minutes, so visitors don't hit the database. Scoring runs inside Postgres, and a nightly GitHub Action saves an encrypted backup because Supabase's free plan has none.
+- **Private by default.** Player counts and the crowd's favourite pick only appear once a league has 10 players, rounded to the nearest 5%, so nobody in a small group can work out who picked what.
+- **Google sign-in only, for now.** It keeps the first release simple, but leaves out anyone without a Google account. Google also blocks sign-in inside some apps' built-in browsers, such as Instagram and TikTok, so the app spots those and asks people to open the link in their normal browser.
 
 ## Commands
 
